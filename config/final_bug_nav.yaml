@@ -1,35 +1,7 @@
 final_bug_nav:
   ros__parameters:
-    # 0 = Bug0-like leave condition, 2 = Bug2-like M-line condition
-    bug_mode: 2
-    bug_direction: "fwcw"
-
-    # Autonomous closed trajectory for the final challenge
-    run_waypoint_sequence: true
+    bug_mode: 0
+    bug_direction: fwcw
     loop_closed_path: false
-    waypoints_x: [1.20, 1.20, -0.80, -0.80, 0.00]
-    waypoints_y: [0.80, -0.80, -0.80, 0.80, 0.00]
-    waypoints_theta: [0.0, -1.57, 3.14, 1.57, 0.0]
-
-    # Topic names. Keep these relative so namespaces can be added later.
-    goal_topic: "goal_pose"
-    odom_topic: "odom"
-    scan_topic: "scan"
-    cmd_vel_topic: "cmd_vel"
-
-    # Sampling and controller gains
-    timer_period: 0.05       # 20 Hz
-    goal_tolerance: 0.12
-    max_linear_speed: 0.16
-    max_angular_speed: 1.6
-    heading_gain: 2.2
-    distance_gain: 0.65
-
-    # Obstacle and wall-following tuning
-    front_clearance: 0.34
-    wall_follow_safety: 0.30
-    ahead_clearance_angle_deg: 35.0
-    goal_heading_clear_angle_deg: 22.0
-    line_distance_threshold_bug2: 0.15
-    leave_goal_improvement: 0.03
-    min_wall_follow_time: 1.0
+    waypoints_x: [0.60,  1.20,  0.60, -0.60]
+    waypoints_y: [0.60,  0.00, -0.60,  0.00]

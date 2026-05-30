@@ -9,3 +9,9 @@ localisation:
     base_frame: "base_footprint"
     kr: 0.002
     kl: 0.002
+    use_ekf: true
+    ekf_r_dist: 0.05
+    ekf_r_bearing: 0.05
+    marker_ids:    [0, 1, 2, 3]
+    marker_pos_x:  [1.2, 1.2, -0.8, -0.8]
+    marker_pos_y:  [0.8, -0.8, -0.8,  0.8]

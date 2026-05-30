@@ -52,6 +52,64 @@ class Localisation(Node):
         
         # Covariance matrix P for pose [x, y, theta]
         self.P = np.zeros((3, 3))
+
+        # EKF/ArUco parameters
+        self.declare_parameter('use_ekf', False)
+        self.declare_parameter('ekf_r_dist', 0.05)
+        self.declare_parameter('ekf_r_bearing', 0.05)
+        self.declare_parameter('marker_ids', [0])
+        self.declare_parameter('marker_pos_x', [1.0])
+        self.declare_parameter('marker_pos_y', [0.0])
+
+        self.use_ekf = bool(self.get_parameter('use_ekf').value)
+        self.ekf_r_dist = float(self.get_parameter('ekf_r_dist').value)
+        self.ekf_r_bearing = float(self.get_parameter('ekf_r_bearing').value)
+        marker_ids = self.get_parameter('marker_ids').value
+        marker_pos_x = self.get_parameter('marker_pos_x').value
+        marker_pos_y = self.get_parameter('marker_pos_y').value
+        self.known_markers = {int(i): (float(x), float(y)) for i, x, y in zip(marker_ids, marker_pos_x, marker_pos_y)}
+        self.latest_detection = None
+        self.new_detection = False
+        from std_msgs.msg import Float32MultiArray
+        self.aruco_sub = self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
+            def aruco_callback(self, msg):
+                if len(msg.data) < 3:
+                    return
+                marker_id = int(msg.data[0])
+                distance = float(msg.data[1])
+                bearing = float(msg.data[2])
+                self.latest_detection = (marker_id, distance, bearing)
+                self.new_detection = True
+
+            def ekf_correct(self, marker_id, z_dist, z_bearing):
+                if marker_id not in self.known_markers:
+                    return
+                mx, my = self.known_markers[marker_id]
+                dx = mx - self.x
+                dy = my - self.y
+                h_dist = math.sqrt(dx**2 + dy**2)
+                if h_dist < 1e-6:
+                    return
+                h_bearing = math.atan2(dy, dx) - self.yaw
+                h_bearing = math.atan2(math.sin(h_bearing), math.cos(h_bearing))
+                y_dist = z_dist - h_dist
+                y_bearing = z_bearing - h_bearing
+                y_bearing = math.atan2(math.sin(y_bearing), math.cos(y_bearing))
+                H = np.array([
+                    [-dx / h_dist, -dy / h_dist, 0.0],
+                    [ dy / (h_dist**2), -dx / (h_dist**2), -1.0]
+                ])
+                R = np.diag([self.ekf_r_dist**2, self.ekf_r_bearing**2])
+                S = H @ self.P @ H.T + R
+                K = self.P @ H.T @ np.linalg.inv(S)
+                innovation = np.array([y_dist, y_bearing])
+                delta = K @ innovation
+                self.x += delta[0]
+                self.y += delta[1]
+                self.yaw += delta[2]
+                self.yaw = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
+                I = np.eye(3)
+                self.P = (I - K @ H) @ self.P
         
         # Static Q values 
         # self.A = 0.00005
@@ -211,13 +269,15 @@ class Localisation(Node):
     def timer_callback(self):
         # Update the pose estimate and publish the odometry message.
         self.get_robot_vel()
-
         current_time = self.update_pose()
-
         if self.dt <= 0.0:
             return
-
         self.update_covariance(self.linear_velocity, self.angular_velocity, self.dt)
+        # EKF correction step
+        if self.use_ekf and self.new_detection:
+            mid, zd, zb = self.latest_detection
+            self.ekf_correct(mid, zd, zb)
+            self.new_detection = False
         self.fill_odom_message(current_time)
         self.publish_odometry()
 
