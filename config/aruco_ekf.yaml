@@ -1,0 +1,21 @@
+aruco_ekf_localisation:
+  ros__parameters:
+    x0: 0.0
+    y0: 0.0
+    theta0: 0.0
+    wheel_radius: 0.05
+    wheel_base: 0.19
+    kr: 0.002
+    kl: 0.002
+    odom_frame: "odom"
+    base_frame: "base_link"
+    output_topic: "ekf_odom"
+    timer_period: 0.05
+
+    # Map position of the ArUco markers used for EKF correction.
+    # Tune these coordinates to the final Gazebo/physical setup.
+    marker_ids: [0, 1, 2, 3]
+    marker_x: [1.0, 1.0, -1.0, -1.0]
+    marker_y: [1.0, -1.0, -1.0, 1.0]
+    marker_frame_prefix: "marker_"
+    measurement_noise_xy: 0.03

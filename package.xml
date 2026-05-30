@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>puzzlebot_sim2</name>
-  <version>0.1.0</version>
-  <description>Clean package for the MCR2 Final Challenge: Puzzlebot simulation, localisation, Bug navigation, RViz and launch files.</description>
+  <version>0.2.0</version>
+  <description>ROS2 package for the MCR2 Final Challenge: Puzzlebot model, localisation, ArUco EKF scaffold and Bug navigation.</description>
   <maintainer email="sofiablancopr@gmail.com">Sofia Blanco Prigmore</maintainer>
-  <license>Apache-2.0</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_python</buildtool_depend>
 
@@ -20,6 +20,11 @@
   <depend>launch</depend>
   <depend>launch_ros</depend>
   <depend>rviz2</depend>
+
+  <!-- Required only for the real-robot ArUco launch. -->
+  <exec_depend>aruco_ros</exec_depend>
+  <exec_depend>aruco_msgs</exec_depend>
+  <exec_depend>camera_info_publisher</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

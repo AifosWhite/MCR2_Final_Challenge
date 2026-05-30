@@ -11,7 +11,7 @@ def generate_launch_description():
     urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
     rviz_config = os.path.join(pkg_dir, 'rviz', 'final_challenge.rviz')
     nav_params = os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml')
-    loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
+    ekf_params = os.path.join(pkg_dir, 'config', 'aruco_ekf.yaml')
 
     with open(urdf_file, 'r') as infp:
         robot_desc = infp.read()
@@ -27,41 +27,20 @@ def generate_launch_description():
         ],
     )
 
-    simulator = Node(
-        package='puzzlebot_sim2',
-        executable='simulator',
-        name='puzzlebot_simulator',
-        output='screen',
-        parameters=[
-            {'x0': 0.0},
-            {'y0': 0.0},
-            {'theta0': 0.0},
-            {'wheel_radius': 0.05},
-            {'wheel_base': 0.19},
-        ],
-    )
-
-    localisation = Node(
-        package='puzzlebot_sim2',
-        executable='localisation',
-        name='localisation',
-        output='screen',
-        parameters=[loc_params],
-    )
-
-    joint_states = Node(
-        package='puzzlebot_sim2',
-        executable='joint_states',
-        name='joint_states',
-        output='screen',
-    )
-
     final_bug_nav = Node(
         package='puzzlebot_sim2',
         executable='final_bug_nav',
         name='final_bug_nav',
         output='screen',
         parameters=[nav_params],
+    )
+
+    aruco_ekf = Node(
+        package='puzzlebot_sim2',
+        executable='aruco_ekf_localisation',
+        name='aruco_ekf_localisation',
+        output='screen',
+        parameters=[ekf_params],
     )
 
     rviz = TimerAction(
@@ -78,24 +57,9 @@ def generate_launch_description():
         ],
     )
 
-    rqt_graph = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package='rqt_graph',
-                executable='rqt_graph',
-                name='rqt_graph',
-                output='screen',
-            )
-        ],
-    )
-
     return LaunchDescription([
         robot_state_publisher,
-        simulator,
-        localisation,
-        joint_states,
         final_bug_nav,
+        aruco_ekf,
         rviz,
-        rqt_graph,
     ])

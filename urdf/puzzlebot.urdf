@@ -95,6 +95,30 @@
     </collision>
   </link>
 
+
+  <!-- LiDAR Link -->
+  <link name="lidar_link">
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.035" radius="0.035"/>
+      </geometry>
+      <material name="lidar_black">
+        <color rgba="0.01 0.01 0.01 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <cylinder length="0.035" radius="0.035"/>
+      </geometry>
+    </collision>
+  </link>
+
   <!-- JOINTS -->
 
   <!-- Fixed joint between base_footprint and base_link (z-axis offset) -->
@@ -126,5 +150,48 @@
     <parent link="base_link"/>
     <child link="caster_link"/>
   </joint>
+
+  <!-- LiDAR Joint -->
+  <joint name="lidar_joint" type="fixed">
+    <origin xyz="0.06 0.0 0.12" rpy="0.0 0.0 0.0"/>
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+  </joint>
+
+  <!-- Gazebo LiDAR sensor. This is used only when the model is spawned in Gazebo. -->
+  <gazebo reference="lidar_link">
+    <sensor name="puzzlebot_lidar" type="ray">
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>5.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
+        <ros>
+          <remapping>~/out:=scan</remapping>
+        </ros>
+        <output_type>sensor_msgs/LaserScan</output_type>
+        <frame_name>lidar_link</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
 
 </robot>
