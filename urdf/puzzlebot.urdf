@@ -96,25 +96,54 @@
   </link>
 
 
-  <!-- LiDAR Link -->
-  <link name="lidar_link">
+  <!-- LiDAR visual body.
+       The physical RPLidar mesh is attached to lidar_base_link.
+       The actual scan frame is laser_frame, placed slightly above the mesh. -->
+  <link name="lidar_base_link">
     <inertial>
-      <mass value="0.05"/>
-      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+      <origin xyz="0.0 0.0 0.021" rpy="0.0 0.0 0.0"/>
+      <mass value="0.1755"/>
+      <inertia ixx="0.000108225" ixy="0.0" ixz="0.0"
+               iyy="0.0001301625" iyz="0.0" izz="0.0001652625"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0 0.0 0.025" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://puzzlebot_sim2/meshes/RPLidar.stl" scale="1 1 1"/>
+      </geometry>
+      <material name="lidar_grey">
+        <color rgba="0.25 0.25 0.25 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0 0.0 0.021" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.08 0.07 0.05"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- LaserScan reference frame.
+       Navigation nodes should use data published in this frame. -->
+  <link name="laser_frame">
+    <inertial>
+      <mass value="0.00001"/>
+      <inertia ixx="0.0000000000417" ixy="0.0" ixz="0.0"
+               iyy="0.0000000000417" iyz="0.0" izz="0.0000000000417"/>
     </inertial>
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <cylinder length="0.035" radius="0.035"/>
+        <box size="0.005 0.005 0.005"/>
       </geometry>
-      <material name="lidar_black">
-        <color rgba="0.01 0.01 0.01 1.0"/>
+      <material name="laser_frame_blue">
+        <color rgba="0.0 0.2 1.0 0.6"/>
       </material>
     </visual>
     <collision>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <cylinder length="0.035" radius="0.035"/>
+        <box size="0.005 0.005 0.005"/>
       </geometry>
     </collision>
   </link>
@@ -151,19 +180,32 @@
     <child link="caster_link"/>
   </joint>
 
-  <!-- LiDAR Joint -->
-  <joint name="lidar_joint" type="fixed">
-    <origin xyz="0.06 0.0 0.12" rpy="0.0 0.0 0.0"/>
+  <!-- LiDAR base mounted on top/front of the robot.
+       Values are taken from the official Puzzlebot ROS2 description. -->
+  <joint name="lidar_base_joint" type="fixed">
+    <origin xyz="0.0425 0.0 0.070" rpy="0.0 0.0 0.0"/>
     <parent link="base_link"/>
-    <child link="lidar_link"/>
+    <child link="lidar_base_link"/>
   </joint>
 
-  <!-- Gazebo LiDAR sensor. This is used only when the model is spawned in Gazebo. -->
-  <gazebo reference="lidar_link">
-    <sensor name="puzzlebot_lidar" type="ray">
-      <always_on>true</always_on>
-      <visualize>true</visualize>
+  <!-- Scan frame located above the LiDAR body. -->
+  <joint name="lidar_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.035" rpy="0.0 0.0 0.0"/>
+    <parent link="lidar_base_link"/>
+    <child link="laser_frame"/>
+  </joint>
+
+  <!-- Gazebo LiDAR sensor.
+       This block is used when the URDF is spawned in Gazebo/Gz.
+       The ROS navigation node expects this data as /scan. -->
+  <gazebo reference="laser_frame">
+    <sensor name="lidar_sensor" type="gpu_lidar">
+      <topic>/scan</topic>
+      <gz_frame_id>laser_frame</gz_frame_id>
+      <pose>0 0 0 0 0 0</pose>
       <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
       <ray>
         <scan>
           <horizontal>
@@ -172,25 +214,19 @@
             <min_angle>-3.14159</min_angle>
             <max_angle>3.14159</max_angle>
           </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>0.01</resolution>
+            <min_angle>0.0</min_angle>
+            <max_angle>0.0</max_angle>
+          </vertical>
         </scan>
         <range>
-          <min>0.12</min>
-          <max>5.0</max>
-          <resolution>0.01</resolution>
+          <min>0.15</min>
+          <max>12.0</max>
+          <resolution>0.017</resolution>
         </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.01</stddev>
-        </noise>
       </ray>
-      <plugin name="gazebo_ros_ray_sensor" filename="libgazebo_ros_ray_sensor.so">
-        <ros>
-          <remapping>~/out:=scan</remapping>
-        </ros>
-        <output_type>sensor_msgs/LaserScan</output_type>
-        <frame_name>lidar_link</frame_name>
-      </plugin>
     </sensor>
   </gazebo>
 
