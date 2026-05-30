@@ -1,0 +1,23 @@
+final_bug_nav:
+  ros__parameters:
+    bug_mode: 2
+    bug_direction: "fwcw"
+
+    scan_topic: "scan"
+    odom_topic: "odom"
+    cmd_vel_topic: "cmd_vel"
+
+    goal_tolerance: 0.18
+    max_linear_speed: 0.16
+    max_angular_speed: 0.8
+
+    ahead_clearance_angle_deg: 35.0
+    goal_heading_clear_angle_deg: 20.0
+    wall_follow_safety: 0.35
+    line_distance_threshold_bug2: 0.15
+
+    use_waypoints: true
+    loop_waypoints: true
+
+    waypoint_x: [1.2, 1.2, -1.2, -1.2, 0.0]
+    waypoint_y: [0.8, -0.8, -0.8, 0.8, 0.0]
