@@ -1,0 +1,25 @@
+# La clave raiz debe coincidir con el nombre de nodo en runtime ('final_bug_nav',
+# forzado por name= en el launch), no con el nombre por defecto del nodo
+# ('final_bug_navigation'), o ROS2 ignora silenciosamente estos parametros.
+final_bug_nav:
+  ros__parameters:
+    bug_mode: 0
+    bug_direction: "fwcw"
+    run_waypoint_sequence: true
+    loop_closed_path: true
+    odom_topic: "odom"
+    scan_topic: "scan"
+    cmd_vel_topic: "cmd_vel"
+
+    # Bucle CERRADO de 4 esquinas, todos los puntos dentro de +/-0.9 m
+    # (maze exterior 3.43x3.41, limite de seguridad +/-1.25 m). Cada vertice
+    # obliga a un giro de ~90 deg; no hay 3 puntos colineales, asi que el robot
+    # debe doblar y circunnavegar. El robot arranca en el centro (0,0).
+    # NOTA: validar contra el layout real de pasillos en maze.world antes de correr.
+    waypoints_x: [ 0.90,  0.90, -0.90, -0.90]
+    waypoints_y: [-0.60,  0.90,  0.90, -0.60]
+    waypoints_theta: [1.57, 3.14, -1.57, 0.0]
+
+    max_linear_speed: 0.16
+    max_angular_speed: 1.6
+    front_clearance: 0.34
