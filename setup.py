@@ -18,6 +18,8 @@ setup(
         (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.urdf'))),
         (os.path.join('share', package_name, 'docs'), glob(os.path.join('docs', '*.md'))),
         (os.path.join('share', package_name, 'scripts'), glob(os.path.join('scripts', '*.sh'))),
+        (os.path.join('share', package_name, 'worlds'), glob(os.path.join('worlds', '*.world'))),
+        (os.path.join('share', package_name, 'maps'), glob(os.path.join('maps', '*'))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

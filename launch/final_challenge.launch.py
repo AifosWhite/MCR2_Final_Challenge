@@ -1,5 +1,7 @@
 import os
 
+from launch.actions import ExecuteProcess
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import TimerAction
@@ -12,6 +14,11 @@ def generate_launch_description():
     rviz_config = os.path.join(pkg_dir, 'rviz', 'final_challenge.rviz')
     nav_params = os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml')
     loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
+    world_file = os.path.join(pkg_dir, 'worlds', 'maze.world')
+    gazebo = ExecuteProcess(
+        cmd=['gz', 'sim', world_file, '-r'],
+        output='screen'
+    )
 
     with open(urdf_file, 'r') as infp:
         robot_desc = infp.read()
@@ -56,20 +63,20 @@ def generate_launch_description():
         output='screen',
     )
     
-        aruco_detector = Node(
-            package='puzzlebot_sim2',
-            executable='aruco_detector',
-            name='aruco_detector',
-            output='screen',
-            parameters=[loc_params],
-        )
+    aruco_detector = Node(
+        package='puzzlebot_sim2',
+        executable='aruco_detector',
+        name='aruco_detector',
+        output='screen',
+        parameters=[loc_params],
+    )
 
-        covariance_marker = Node(
-            package='puzzlebot_sim2',
-            executable='covariance_marker',
-            name='covariance_marker',
-            output='screen',
-        )
+    covariance_marker = Node(
+        package='puzzlebot_sim2',
+        executable='covariance_marker',
+        name='covariance_marker',
+        output='screen',
+    )
 
     final_bug_nav = Node(
         package='puzzlebot_sim2',
@@ -106,12 +113,13 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        gazebo,
         robot_state_publisher,
         simulator,
         localisation,
         joint_states,
-            aruco_detector,
-            covariance_marker,
+        aruco_detector,
+        covariance_marker,
         final_bug_nav,
         rviz,
         rqt_graph,

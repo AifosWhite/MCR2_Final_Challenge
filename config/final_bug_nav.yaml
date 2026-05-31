@@ -1,7 +1,13 @@
 final_bug_nav:
   ros__parameters:
+    run_waypoint_sequence: true
+    loop_closed_path: false
     bug_mode: 0
     bug_direction: fwcw
-    loop_closed_path: false
-    waypoints_x: [0.60,  1.20,  0.60, -0.60]
-    waypoints_y: [0.60,  0.00, -0.60,  0.00]
+    goal_tolerance: 0.12
+    max_linear_speed: 0.16
+    front_clearance: 0.30
+    wall_follow_safety: 0.28
+    waypoints_x: [-1.2,  1.2,  1.2, -1.2]
+    waypoints_y: [ 1.1,  1.1, -1.1, -1.1]
+    waypoints_theta: [1.57, 0.0, -1.57, 3.14]

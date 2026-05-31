@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 from rclpy import qos
 from rclpy.node import Node
 from std_msgs.msg import Float32
+from std_msgs.msg import Float32MultiArray
 
 
 class Localisation(Node):
@@ -70,64 +71,61 @@ class Localisation(Node):
         self.known_markers = {int(i): (float(x), float(y)) for i, x, y in zip(marker_ids, marker_pos_x, marker_pos_y)}
         self.latest_detection = None
         self.new_detection = False
-        from std_msgs.msg import Float32MultiArray
-        self.aruco_sub = self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
-            def aruco_callback(self, msg):
-                if len(msg.data) < 3:
-                    return
-                marker_id = int(msg.data[0])
-                distance = float(msg.data[1])
-                bearing = float(msg.data[2])
-                self.latest_detection = (marker_id, distance, bearing)
-                self.new_detection = True
+        self.aruco_sub = self.create_subscription(
+            Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
 
-            def ekf_correct(self, marker_id, z_dist, z_bearing):
-                if marker_id not in self.known_markers:
-                    return
-                mx, my = self.known_markers[marker_id]
-                dx = mx - self.x
-                dy = my - self.y
-                h_dist = math.sqrt(dx**2 + dy**2)
-                if h_dist < 1e-6:
-                    return
-                h_bearing = math.atan2(dy, dx) - self.yaw
-                h_bearing = math.atan2(math.sin(h_bearing), math.cos(h_bearing))
-                y_dist = z_dist - h_dist
-                y_bearing = z_bearing - h_bearing
-                y_bearing = math.atan2(math.sin(y_bearing), math.cos(y_bearing))
-                H = np.array([
-                    [-dx / h_dist, -dy / h_dist, 0.0],
-                    [ dy / (h_dist**2), -dx / (h_dist**2), -1.0]
-                ])
-                R = np.diag([self.ekf_r_dist**2, self.ekf_r_bearing**2])
-                S = H @ self.P @ H.T + R
-                K = self.P @ H.T @ np.linalg.inv(S)
-                innovation = np.array([y_dist, y_bearing])
-                delta = K @ innovation
-                self.x += delta[0]
-                self.y += delta[1]
-                self.yaw += delta[2]
-                self.yaw = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
-                I = np.eye(3)
-                self.P = (I - K @ H) @ self.P
-        
-        # Static Q values 
+        # Static Q values
         # self.A = 0.00005
         # self.B = 0.000005
         # self.C = 0.0001
 
         self.last_time = self.get_clock().now()
-        self.dt = 0.0 
+        self.dt = 0.0
         self.odom_msg = Odometry()
 
         # Wheel speeds behave like sensor signals, so use sensor-data QoS.
-        self.create_subscription(Float32,'wr', self.wr_callback, qos.qos_profile_sensor_data)
-        self.create_subscription(Float32,'wl', self.wl_callback, qos.qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wr', self.wr_callback, qos.qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wl', self.wl_callback, qos.qos_profile_sensor_data)
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
-        #Timer
+        # Timer
         self.timer = self.create_timer(0.05, self.timer_callback)
         self.get_logger().info("Localisation node initialized.")
+
+    def aruco_callback(self, msg):
+        if len(msg.data) < 3:
+            return
+        self.latest_detection = (int(msg.data[0]), float(msg.data[1]), float(msg.data[2]))
+        self.new_detection = True
+
+    def ekf_correct(self, marker_id, z_dist, z_bearing):
+        if marker_id not in self.known_markers:
+            return
+        mx, my = self.known_markers[marker_id]
+        dx = mx - self.x
+        dy = my - self.y
+        h_dist = math.sqrt(dx**2 + dy**2)
+        if h_dist < 1e-6:
+            return
+        h_bearing = math.atan2(dy, dx) - self.yaw
+        h_bearing = math.atan2(math.sin(h_bearing), math.cos(h_bearing))
+        y_dist = z_dist - h_dist
+        y_bearing = z_bearing - h_bearing
+        y_bearing = math.atan2(math.sin(y_bearing), math.cos(y_bearing))
+        H = np.array([
+            [-dx / h_dist,     -dy / h_dist,      0.0],
+            [ dy / h_dist**2,  -dx / h_dist**2,  -1.0]
+        ])
+        R = np.diag([self.ekf_r_dist**2, self.ekf_r_bearing**2])
+        S = H @ self.P @ H.T + R
+        K = self.P @ H.T @ np.linalg.inv(S)
+        delta = K @ np.array([y_dist, y_bearing])
+        self.x   += delta[0]
+        self.y   += delta[1]
+        self.yaw += delta[2]
+        self.yaw  = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
+        self.P    = (np.eye(3) - K @ H) @ self.P
+        self.P    = 0.5 * (self.P + self.P.T)
         
     def wr_callback(self, msg:Float32):
         # Store the latest right wheel speed.
