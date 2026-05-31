@@ -16,11 +16,13 @@ class JointPublisher(Node):
 
         # Params
         self.declare_parameter('odom_frame', 'odom')
+        self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('base_frame', 'base_footprint')
         self.declare_parameter('publish_map_to_odom', 'false')
 
         #Read Params
         self.odom_frame = self.get_parameter('odom_frame').value
+        self.odom_topic = self.get_parameter('odom_topic').value
         self.base_frame = self.get_parameter('base_frame').value
 
         self.x = 0.0
@@ -43,7 +45,7 @@ class JointPublisher(Node):
         self.joint_state_msg.velocity = [0.0, 0.0]
         self.joint_state_msg.effort = [0.0, 0.0]
 
-        self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
+        self.create_subscription(Odometry, self.odom_topic, self.odom_callback, 10)
         self.create_subscription(
             Float32,
             'wr',

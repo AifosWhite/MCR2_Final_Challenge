@@ -1,0 +1,31 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='aruco_70'>
+    <static>true</static>
+    <link name='link'>
+      <visual name='visual'>
+        <pose>0 0 0 0 -1.5708 0</pose>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>0.18 0.18</size>
+          </plane>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://puzzlebot_sim2/models/aruco_70/materials/scripts/aruco.material</uri>
+            <name>aruco/70</name>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision'>
+        <pose>0 0 0 0 -1.5708 0</pose>
+        <geometry>
+          <box>
+            <size>0.18 0.02 0.18</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

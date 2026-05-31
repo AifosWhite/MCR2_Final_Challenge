@@ -1,0 +1,13 @@
+material aruco/705
+{
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture aruco_705.png
+      }
+    }
+  }
+}

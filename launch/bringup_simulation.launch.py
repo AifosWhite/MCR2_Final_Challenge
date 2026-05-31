@@ -8,17 +8,18 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('puzzlebot_sim2')
-    world_file = os.path.join(pkg_dir, 'worlds', 'puzzlebot_aruco_markers.world')
+    world_file = os.path.join(pkg_dir, 'worlds', 'maze.world')
     urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
 
-    # Add the local package share parent so model://puzzlebot_sim2/meshes/... resolves.
+    # Add the local package share directory and the generated ArUco models path.
     local_gz_model_path = os.path.dirname(pkg_dir)
+    marker_model_path = os.path.join(pkg_dir, 'models')
     current_path = os.environ.get('GZ_SIM_RESOURCE_PATH', '')
-    os.environ['GZ_SIM_RESOURCE_PATH'] = (
-        current_path + ':' + local_gz_model_path
-        if current_path
-        else local_gz_model_path
-    )
+    paths = []
+    if current_path:
+        paths.append(current_path)
+    paths.extend([pkg_dir, marker_model_path, local_gz_model_path])
+    os.environ['GZ_SIM_RESOURCE_PATH'] = ':'.join(paths)
 
     # Add known external model paths if available.
     puzzlebot_gazebo_models = os.path.expanduser(

@@ -14,8 +14,8 @@ aruco_ekf_localisation:
 
     # Map position of the ArUco markers used for EKF correction.
     # Tune these coordinates to the final Gazebo/physical setup.
-    marker_ids: [0, 1, 2, 3]
-    marker_x: [1.0, 1.0, -1.0, -1.0]
-    marker_y: [1.0, -1.0, -1.0, 1.0]
+    marker_ids: [705, 706, 70, 703, 708, 75, 702]
+    marker_x: [-0.50, -0.50, -1.30, 0.40, -0.35, 0.80, 0.30]
+    marker_y: [-0.88, 0.82, 0.20, -0.28, -0.25, 1.12, -1.15]
     marker_frame_prefix: "marker_"
     measurement_noise_xy: 0.03

@@ -11,7 +11,6 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory('puzzlebot_sim2')
     urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
     rviz_config = os.path.join(pkg_dir, 'rviz', 'final_challenge.rviz')
-    loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     with open(urdf_file, 'r') as infp:
@@ -43,12 +42,12 @@ def generate_launch_description():
         ],
     )
 
-    localisation = Node(
+    aruco_ekf = Node(
         package='puzzlebot_sim2',
-        executable='localisation',
-        name='localisation',
+        executable='aruco_ekf_localisation',
+        name='aruco_ekf_localisation',
         output='screen',
-        parameters=[loc_params, {'use_sim_time': use_sim_time}],
+        parameters=[os.path.join(pkg_dir, 'config', 'aruco_ekf.yaml'), {'use_sim_time': use_sim_time}],
     )
 
     joint_states = Node(
@@ -56,7 +55,7 @@ def generate_launch_description():
         executable='joint_states',
         name='joint_states',
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time}],
+        parameters=[{'use_sim_time': use_sim_time}, {'odom_topic': 'ekf_odom'}],
     )
 
     rviz = TimerAction(
@@ -73,20 +72,33 @@ def generate_launch_description():
         ],
     )
 
-    final_bug_nav = Node(
-        package='puzzlebot_sim2',
-        executable='final_bug_nav',
-        name='final_bug_nav',
-        output='screen',
-        parameters=[os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml'), {'use_sim_time': use_sim_time}],
+    rqt_image = TimerAction(
+        period=3.0,
+        actions=[
+            Node(
+                package='rqt_image_view',
+                executable='rqt_image_view',
+                name='rqt_image_view',
+                output='screen',
+                parameters=[{'use_sim_time': use_sim_time}],
+            )
+        ],
     )
 
-    fake_scan = Node(
+    waypoint_driver = Node(
         package='puzzlebot_sim2',
-        executable='fake_scan',
-        name='fake_scan',
+        executable='waypoint_driver',
+        name='waypoint_driver',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
+    )
+
+    aruco_detector = Node(
+        package='puzzlebot_sim2',
+        executable='aruco_detector',
+        name='aruco_detector',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}, {'image_topic': '/camera/image_raw'}],
     )
 
     return LaunchDescription([
@@ -97,9 +109,10 @@ def generate_launch_description():
         ),
         robot_state_publisher,
         simulator,
-        localisation,
+        aruco_ekf,
         joint_states,
-        fake_scan,
-        final_bug_nav,
+        waypoint_driver,
+        aruco_detector,
         rviz,
+        rqt_image,
     ])

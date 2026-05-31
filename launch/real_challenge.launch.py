@@ -37,18 +37,17 @@ def generate_launch_description():
         ],
     )
 
-    aruco = Node(
-        package='aruco_ros',
-        executable='marker_publisher',
-        name='marker_publisher',
+    aruco_detector = Node(
+        package='puzzlebot_sim2',
+        executable='aruco_detector',
+        name='aruco_detector',
         output='screen',
         parameters=[
-            {'image_is_rectified': True},
-            {'marker_size': 0.165},
-            {'reference_frame': 'base_link'},
+            {'image_topic': '/video_source/raw'},
+            {'marker_length': 0.165},
             {'camera_frame': 'camera'},
+            {'parent_frame': 'base_link'},
         ],
-        remappings=[('/image', '/video_source/raw')],
     )
 
     aruco_ekf = Node(

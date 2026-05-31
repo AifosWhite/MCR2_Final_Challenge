@@ -21,10 +21,9 @@
   <depend>launch_ros</depend>
   <depend>ros_gz_sim</depend>
   <depend>rviz2</depend>
+  <depend>cv_bridge</depend>
 
   <!-- Required only for the real-robot ArUco launch. -->
-  <exec_depend>aruco_ros</exec_depend>
-  <exec_depend>aruco_msgs</exec_depend>
   <exec_depend>camera_info_publisher</exec_depend>
   <exec_depend>ros_deep_learning</exec_depend>
 
