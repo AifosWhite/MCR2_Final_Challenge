@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 from rclpy import qos
 from rclpy.node import Node
 from std_msgs.msg import Float32
+from std_msgs.msg import Float32MultiArray
 
 
 class Localisation(Node):
@@ -52,24 +53,80 @@ class Localisation(Node):
         
         # Covariance matrix P for pose [x, y, theta]
         self.P = np.zeros((3, 3))
-        
-        # Static Q values 
+
+        # EKF/ArUco parameters
+        self.declare_parameter('use_ekf', False)
+        self.declare_parameter('ekf_r_dist', 0.05)
+        self.declare_parameter('ekf_r_bearing', 0.05)
+        self.declare_parameter('marker_ids', [0])
+        self.declare_parameter('marker_pos_x', [1.0])
+        self.declare_parameter('marker_pos_y', [0.0])
+
+        self.use_ekf = bool(self.get_parameter('use_ekf').value)
+        self.ekf_r_dist = float(self.get_parameter('ekf_r_dist').value)
+        self.ekf_r_bearing = float(self.get_parameter('ekf_r_bearing').value)
+        marker_ids = self.get_parameter('marker_ids').value
+        marker_pos_x = self.get_parameter('marker_pos_x').value
+        marker_pos_y = self.get_parameter('marker_pos_y').value
+        self.known_markers = {int(i): (float(x), float(y)) for i, x, y in zip(marker_ids, marker_pos_x, marker_pos_y)}
+        self.latest_detection = None
+        self.new_detection = False
+        self.aruco_sub = self.create_subscription(
+            Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
+
+        # Static Q values
         # self.A = 0.00005
         # self.B = 0.000005
         # self.C = 0.0001
 
         self.last_time = self.get_clock().now()
-        self.dt = 0.0 
+        self.dt = 0.0
         self.odom_msg = Odometry()
 
         # Wheel speeds behave like sensor signals, so use sensor-data QoS.
-        self.create_subscription(Float32,'wr', self.wr_callback, qos.qos_profile_sensor_data)
-        self.create_subscription(Float32,'wl', self.wl_callback, qos.qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wr', self.wr_callback, qos.qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wl', self.wl_callback, qos.qos_profile_sensor_data)
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
-        #Timer
+        # Timer
         self.timer = self.create_timer(0.05, self.timer_callback)
         self.get_logger().info("Localisation node initialized.")
+
+    def aruco_callback(self, msg):
+        if len(msg.data) < 3:
+            return
+        self.latest_detection = (int(msg.data[0]), float(msg.data[1]), float(msg.data[2]))
+        self.new_detection = True
+
+    def ekf_correct(self, marker_id, z_dist, z_bearing):
+        if marker_id not in self.known_markers:
+            return
+        mx, my = self.known_markers[marker_id]
+        dx = mx - self.x
+        dy = my - self.y
+        h_dist = math.sqrt(dx**2 + dy**2)
+        if h_dist < 1e-6:
+            return
+        h_bearing = math.atan2(dy, dx) - self.yaw
+        h_bearing = math.atan2(math.sin(h_bearing), math.cos(h_bearing))
+        y_dist = z_dist - h_dist
+        y_bearing = z_bearing - h_bearing
+        y_bearing = math.atan2(math.sin(y_bearing), math.cos(y_bearing))
+        # G = Jacobiano del modelo de observacion (no confundir con H, la del movimiento)
+        G = np.array([
+            [-dx / h_dist,     -dy / h_dist,      0.0],
+            [ dy / h_dist**2,  -dx / h_dist**2,  -1.0]
+        ])
+        R = np.diag([self.ekf_r_dist**2, self.ekf_r_bearing**2])
+        S = G @ self.P @ G.T + R
+        K = self.P @ G.T @ np.linalg.inv(S)
+        delta = K @ np.array([y_dist, y_bearing])
+        self.x   += delta[0]
+        self.y   += delta[1]
+        self.yaw += delta[2]
+        self.yaw  = math.atan2(math.sin(self.yaw), math.cos(self.yaw))
+        self.P    = (np.eye(3) - K @ G) @ self.P
+        self.P    = 0.5 * (self.P + self.P.T)
         
     def wr_callback(self, msg:Float32):
         # Store the latest right wheel speed.
@@ -114,6 +171,15 @@ class Localisation(Node):
         self.P = J_h @ self.P @ J_h.T + Q
         """
     def update_covariance(self, v, w, dt):
+        """Propaga la covarianza P con el modelo por encoders (mejora sobre el H_k simple del curso).
+
+        En lugar de linealizar respecto a (v, w), se linealiza respecto a los
+        desplazamientos de rueda [dr, dl]:
+            P = J_h P J_h^T + J_delta Sigma_delta J_delta^T
+        donde J_h es la Jacobiana respecto a la pose previa, J_delta la Jacobiana
+        respecto a [dr, dl], y Sigma_delta el ruido de rueda (crece con |dr|, |dl|).
+        Esto produce un Q dinamico: a mayor avance/giro, mayor incertidumbre.
+        """
         # Wheel linear displacements during this time step
         dr = self.wheel_radius * self.wr * dt
         dl = self.wheel_radius * self.wl * dt
@@ -211,13 +277,15 @@ class Localisation(Node):
     def timer_callback(self):
         # Update the pose estimate and publish the odometry message.
         self.get_robot_vel()
-
         current_time = self.update_pose()
-
         if self.dt <= 0.0:
             return
-
         self.update_covariance(self.linear_velocity, self.angular_velocity, self.dt)
+        # EKF correction step
+        if self.use_ekf and self.new_detection:
+            mid, zd, zb = self.latest_detection
+            self.ekf_correct(mid, zd, zb)
+            self.new_detection = False
         self.fill_odom_message(current_time)
         self.publish_odometry()
 
