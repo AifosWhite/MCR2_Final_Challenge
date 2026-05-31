@@ -56,6 +56,21 @@ def generate_launch_description():
         output='screen',
     )
 
+    aruco_detector = Node(
+        package='puzzlebot_sim2',
+        executable='aruco_detector',
+        name='aruco_detector',
+        output='screen',
+        parameters=[loc_params],
+    )
+
+    covariance_marker = Node(
+        package='puzzlebot_sim2',
+        executable='covariance_marker',
+        name='covariance_marker',
+        output='screen',
+    )
+
     final_bug_nav = Node(
         package='puzzlebot_sim2',
         executable='final_bug_nav',
@@ -95,6 +110,8 @@ def generate_launch_description():
         simulator,
         localisation,
         joint_states,
+        aruco_detector,
+        covariance_marker,
         final_bug_nav,
         rviz,
         rqt_graph,
