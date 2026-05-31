@@ -42,6 +42,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float32
+from std_msgs.msg import Float32MultiArray
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 
 
@@ -113,6 +114,36 @@ class Localisation(Node):
             f'kr={self.kr}, kl={self.kl}'
         )
 
+        # EKF correction parameters
+        self.declare_parameter('use_ekf', False)
+        self.declare_parameter('ekf_r_dist', 0.05)
+        self.declare_parameter('ekf_r_bearing', 0.05)
+        self.declare_parameter('marker_ids', [0])
+        self.declare_parameter('marker_pos_x', [1.0])
+        self.declare_parameter('marker_pos_y', [0.0])
+
+        self.use_ekf = bool(self.get_parameter('use_ekf').value)
+        self.ekf_r_dist = float(self.get_parameter('ekf_r_dist').value)
+        self.ekf_r_bearing = float(self.get_parameter('ekf_r_bearing').value)
+
+        ids = list(self.get_parameter('marker_ids').value)
+        pos_x = list(self.get_parameter('marker_pos_x').value)
+        pos_y = list(self.get_parameter('marker_pos_y').value)
+        self.known_markers = {
+            int(i): (float(x), float(y))
+            for i, x, y in zip(ids, pos_x, pos_y)
+        }
+
+        self.latest_detection = None
+        self.new_detection = False
+
+        self.create_subscription(
+            Float32MultiArray,
+            '/aruco/detections',
+            self.aruco_callback,
+            10,
+        )
+
     def publish_static_map_odom(self):
         tf = TransformStamped()
         tf.header.stamp = self.get_clock().now().to_msg()
@@ -170,6 +201,12 @@ class Localisation(Node):
         self.theta += w_ang * self.dt
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
 
+        # EKF correction — execute when a new ArUco detection is available
+        if self.use_ekf and self.new_detection:
+            mid, zd, zb = self.latest_detection
+            self.ekf_correct(mid, zd, zb)
+            self.new_detection = False
+
         now = self.get_clock().now().to_msg()
         q = yaw_to_quat(self.theta)
 
@@ -218,6 +255,71 @@ class Localisation(Node):
         # yaw-x, yaw-y, yaw-yaw
         cov[30] = float(s[2, 0]); cov[31] = float(s[2, 1]); cov[35] = float(s[2, 2])
         return cov
+
+    def aruco_callback(self, msg):
+        # Store latest ArUco detection [marker_id, distance, bearing]
+        if len(msg.data) < 3:
+            return
+        self.latest_detection = (
+            int(msg.data[0]),
+            float(msg.data[1]),
+            float(msg.data[2]),
+        )
+        self.new_detection = True
+
+    def ekf_correct(self, marker_id, z_dist, z_bearing):
+        # EKF correction step — PDF pages 13-17
+        if marker_id not in self.known_markers:
+            return
+
+        mx, my = self.known_markers[marker_id]
+
+        # Delta and p (PDF page 15)
+        dx = mx - self.x
+        dy = my - self.y
+        p = dx**2 + dy**2
+        sqrt_p = math.sqrt(p)
+
+        if sqrt_p < 1e-6:
+            return
+
+        # Expected measurement g(m_i, mu_hat_k) — PDF page 15
+        g1 = sqrt_p
+        g2 = math.atan2(dy, dx) - self.yaw
+        g2 = math.atan2(math.sin(g2), math.cos(g2))
+
+        # Innovation y_k = z_k - z_hat_k — PDF page 14
+        y_dist = z_dist - g1
+        y_bearing = z_bearing - g2
+        y_bearing = math.atan2(math.sin(y_bearing), math.cos(y_bearing))
+
+        # Measurement Jacobian G_k — PDF page 15
+        G_k = np.array([
+            [-dx / sqrt_p,  -dy / sqrt_p,   0.0],
+            [ dy / p,        -dx / p,       -1.0],
+        ])
+
+        # Measurement noise R_k — PDF page 16
+        R_k = np.diag([self.ekf_r_dist**2, self.ekf_r_bearing**2])
+
+        # Innovation covariance Z_k = G_k * Sigma_hat * G_k^T + R_k — PDF page 16
+        Z_k = G_k @ self.Sigma @ G_k.T + R_k
+
+        # Kalman gain K_k = Sigma_hat * G_k^T * Z_k^{-1} — PDF page 16
+        K_k = self.Sigma @ G_k.T @ np.linalg.inv(Z_k)
+
+        # State update mu_k = mu_hat_k + K_k * y_k — PDF page 16
+        innovation = np.array([y_dist, y_bearing])
+        delta = K_k @ innovation
+        self.x   += delta[0]
+        self.y   += delta[1]
+        self.theta += delta[2]
+        self.theta  = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        # Covariance update Sigma_k = (I - K_k * G_k) * Sigma_hat — PDF page 16
+        self.Sigma = (np.eye(3) - K_k @ G_k) @ self.Sigma
+        # Force symmetry for numerical stability
+        self.Sigma = 0.5 * (self.Sigma + self.Sigma.T)
 
 
 def main(args=None):
