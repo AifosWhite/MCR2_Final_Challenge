@@ -2,7 +2,8 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import TimerAction
+from launch.actions import DeclareLaunchArgument, TimerAction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
@@ -11,6 +12,7 @@ def generate_launch_description():
     urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
     rviz_config = os.path.join(pkg_dir, 'rviz', 'final_challenge.rviz')
     loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
+    use_sim_time = LaunchConfiguration('use_sim_time')
 
     with open(urdf_file, 'r') as infp:
         robot_desc = infp.read()
@@ -22,7 +24,7 @@ def generate_launch_description():
         output='screen',
         parameters=[
             {'robot_description': robot_desc},
-            {'use_sim_time': False},
+            {'use_sim_time': use_sim_time},
         ],
     )
 
@@ -37,6 +39,7 @@ def generate_launch_description():
             {'theta0': 0.0},
             {'wheel_radius': 0.05},
             {'wheel_base': 0.19},
+            {'use_sim_time': use_sim_time},
         ],
     )
 
@@ -45,7 +48,7 @@ def generate_launch_description():
         executable='localisation',
         name='localisation',
         output='screen',
-        parameters=[loc_params],
+        parameters=[loc_params, {'use_sim_time': use_sim_time}],
     )
 
     joint_states = Node(
@@ -53,6 +56,7 @@ def generate_launch_description():
         executable='joint_states',
         name='joint_states',
         output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
     )
 
     rviz = TimerAction(
@@ -64,12 +68,17 @@ def generate_launch_description():
                 name='rviz2',
                 output='screen',
                 arguments=['-d', rviz_config],
-                parameters=[{'use_sim_time': False}],
+                parameters=[{'use_sim_time': use_sim_time}],
             )
         ],
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use simulation time from /clock.',
+        ),
         robot_state_publisher,
         simulator,
         localisation,
