@@ -47,9 +47,10 @@ class FinalBugNavigation(Node):
         self.declare_parameter('waypoints_x', [1.20, 1.20, -0.80, -0.80, 0.00])
         self.declare_parameter('waypoints_y', [0.80, -0.80, -0.80, 0.80, 0.00])
         self.declare_parameter('waypoints_theta', [0.0, -1.57, 3.14, 1.57, 0.0])
-        self.declare_parameter('waypoint_x', [])
-        self.declare_parameter('waypoint_y', [])
-        self.declare_parameter('waypoint_theta', [])
+        # Legacy waypoint params: declare as float arrays to match YAML types
+        self.declare_parameter('waypoint_x', [0.0])
+        self.declare_parameter('waypoint_y', [0.0])
+        self.declare_parameter('waypoint_theta', [0.0])
 
         # Controller parameters
         self.declare_parameter('timer_period', 0.05)  # 20 Hz control loop
