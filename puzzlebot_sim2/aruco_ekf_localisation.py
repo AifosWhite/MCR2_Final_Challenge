@@ -2,8 +2,9 @@
 """Experimental ArUco-assisted EKF localisation for the final challenge.
 
 Prediction uses differential-drive wheel speeds (/wr, /wl). Correction uses TF
-measurements from aruco_ros marker frames, interpreted as marker position in the
-robot base frame. The map position of each marker is configured in YAML.
+measurements from aruco_ros marker frames, converted to a range-bearing
+measurement (distance, angle) in the robot base frame. The map position of each
+marker is configured in YAML.
 
 The node is designed to be safe for development: if no marker TF is available,
 it only performs odometry prediction and covariance growth.
@@ -42,7 +43,9 @@ class ArucoEkfLocalisation(Node):
         self.declare_parameter('marker_x', [1.0, 1.0, -1.0, -1.0])
         self.declare_parameter('marker_y', [1.0, -1.0, -1.0, 1.0])
         self.declare_parameter('marker_frame_prefix', 'marker_')
-        self.declare_parameter('measurement_noise_xy', 0.03)
+        # Modelo de medicion rango-azimut: ruido (desv. estandar) por componente.
+        self.declare_parameter('measurement_noise_range', 0.05)
+        self.declare_parameter('measurement_noise_bearing', 0.02)
 
         self.x = float(self.get_parameter('x0').value)
         self.y = float(self.get_parameter('y0').value)
@@ -56,7 +59,8 @@ class ArucoEkfLocalisation(Node):
         self.output_topic = str(self.get_parameter('output_topic').value)
         timer_period = float(self.get_parameter('timer_period').value)
         self.marker_frame_prefix = str(self.get_parameter('marker_frame_prefix').value)
-        self.measurement_noise_xy = float(self.get_parameter('measurement_noise_xy').value)
+        self.measurement_noise_range = float(self.get_parameter('measurement_noise_range').value)
+        self.measurement_noise_bearing = float(self.get_parameter('measurement_noise_bearing').value)
 
         ids = [int(v) for v in self.get_parameter('marker_ids').value]
         xs = [float(v) for v in self.get_parameter('marker_x').value]
@@ -103,13 +107,15 @@ class ArucoEkfLocalisation(Node):
         self.y += dc * math.sin(theta_mid)
         self.theta = self.normalize_angle(self.theta + dtheta)
 
-        F = np.array([
+        # H_k: Jacobiano del modelo de movimiento (presentacion: H = Jacobiano de movimiento)
+        H = np.array([
             [1.0, 0.0, -dc * math.sin(theta_mid)],
             [0.0, 1.0,  dc * math.cos(theta_mid)],
             [0.0, 0.0,  1.0],
         ])
 
-        G = np.array([
+        # V: Jacobiano respecto al ruido de las ruedas (mapea el ruido de ruedas a Q_k)
+        V = np.array([
             [0.5 * math.cos(theta_mid) - dc * math.sin(theta_mid) / (2.0 * self.L),
              0.5 * math.cos(theta_mid) + dc * math.sin(theta_mid) / (2.0 * self.L)],
             [0.5 * math.sin(theta_mid) + dc * math.cos(theta_mid) / (2.0 * self.L),
@@ -118,8 +124,9 @@ class ArucoEkfLocalisation(Node):
         ])
 
         wheel_noise = np.diag([self.kr * abs(dr), self.kl * abs(dl)])
-        Q = G @ wheel_noise @ G.T
-        self.P = F @ self.P @ F.T + Q
+        Q = V @ wheel_noise @ V.T
+        # Sigma_k = H_k Sigma_{k-1} H_k^T + Q_k
+        self.P = H @ self.P @ H.T + Q
         self.P = 0.5 * (self.P + self.P.T)
 
     def correct_with_marker(self, marker_id: int, marker_position: Tuple[float, float]):
@@ -133,39 +140,60 @@ class ArucoEkfLocalisation(Node):
         except TransformException:
             return
 
+        # Medicion real z_k = [rango, azimut], obtenida del marcador visto en el
+        # frame del robot (modelo de medicion rango-azimut de la presentacion).
+        tx = tf.transform.translation.x
+        ty = tf.transform.translation.y
         z = np.array([
-            tf.transform.translation.x,
-            tf.transform.translation.y,
+            math.hypot(tx, ty),
+            math.atan2(ty, tx),
         ])
 
+        # Medicion esperada zhat_k = g(mu_hat_k, m_i)
+        #   g1 = sqrt((mx - sx)^2 + (my - sy)^2)
+        #   g2 = atan2(my - sy, mx - sx) - s_theta
         mx, my = marker_position
         dx = mx - self.x
         dy = my - self.y
-        c = math.cos(self.theta)
-        s = math.sin(self.theta)
+        p = dx * dx + dy * dy
+        if p < 1e-9:
+            return
+        sqrt_p = math.sqrt(p)
 
-        # Expected marker coordinates in robot/base frame: R(-theta) * (marker - robot)
-        h = np.array([
-            c * dx + s * dy,
-            -s * dx + c * dy,
+        z_hat = np.array([
+            sqrt_p,
+            self.normalize_angle(math.atan2(dy, dx) - self.theta),
         ])
 
-        H = np.array([
-            [-c, -s, -s * dx + c * dy],
-            [ s, -c, -c * dx - s * dy],
+        # G_k: Jacobiano del modelo de medicion (presentacion: G = Jacobiano de medicion)
+        G = np.array([
+            [-dx / sqrt_p, -dy / sqrt_p,  0.0],
+            [ dy / p,      -dx / p,      -1.0],
         ])
 
-        R = np.eye(2) * (self.measurement_noise_xy ** 2)
-        innovation = z - h
-        S = H @ self.P @ H.T + R
-        K = self.P @ H.T @ np.linalg.inv(S)
+        # R_k: ruido del sensor (rango, azimut)
+        R = np.diag([
+            self.measurement_noise_range ** 2,
+            self.measurement_noise_bearing ** 2,
+        ])
+
+        # Innovacion y_k = z_k - zhat_k (componente angular envuelta a [-pi, pi])
+        innovation = z - z_hat
+        innovation[1] = self.normalize_angle(innovation[1])
+
+        # Z_k = G_k Sigma_hat_k G_k^T + R_k ;  K_k = Sigma_hat_k G_k^T Z_k^-1
+        Z = G @ self.P @ G.T + R
+        K = self.P @ G.T @ np.linalg.inv(Z)
         correction = K @ innovation
 
+        # mu_k = mu_hat_k + K_k y_k
         self.x += correction[0]
         self.y += correction[1]
         self.theta = self.normalize_angle(self.theta + correction[2])
+
+        # Sigma_k = (I - K_k G_k) Sigma_hat_k
         I = np.eye(3)
-        self.P = (I - K @ H) @ self.P
+        self.P = (I - K @ G) @ self.P
         self.P = 0.5 * (self.P + self.P.T)
 
     def publish_odom(self, stamp):
