@@ -32,6 +32,7 @@ setup(
             'final_bug_nav = puzzlebot_sim2.final_bug_nav:main',
             'aruco_ekf_localisation = puzzlebot_sim2.aruco_ekf_localisation:main',
             'aruco_tf_listener = puzzlebot_sim2.aruco_tf_listener:main',
+            'fake_scan = puzzlebot_sim2.fake_scan:main',
         ],
     },
 )

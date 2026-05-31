@@ -81,6 +81,14 @@ def generate_launch_description():
         parameters=[os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml'), {'use_sim_time': use_sim_time}],
     )
 
+    fake_scan = Node(
+        package='puzzlebot_sim2',
+        executable='fake_scan',
+        name='fake_scan',
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
@@ -91,6 +99,7 @@ def generate_launch_description():
         simulator,
         localisation,
         joint_states,
+        fake_scan,
         final_bug_nav,
         rviz,
     ])
