@@ -12,6 +12,10 @@ localisation:
     use_ekf: true
     ekf_r_dist: 0.05
     ekf_r_bearing: 0.05
-    marker_ids:   [0,     1,    2,     3   ]
-    marker_pos_x: [-1.3,  1.0,  1.0,  -1.3 ]
-    marker_pos_y: [ 0.9,  0.9, -0.9,  -0.9 ]
+    marker_size_m: 0.18
+    aruco_dictionary: "DICT_4X4_1000"
+    # Physical ArUcos from https://chev.me/arucogen/:
+    # local labels:  1,     2,     3,    4,     5,     6,     7,     8
+    marker_ids:   [70,    706,    75,    701,    703,    705,    708,    702]
+    marker_pos_x: [-1.400, -0.430,  0.868,  1.140,  0.872, -0.110, -0.408,  0.231]
+    marker_pos_y: [ 0.240,  0.866,  1.220,  0.242, -0.350, -1.055, -0.370, -1.310]

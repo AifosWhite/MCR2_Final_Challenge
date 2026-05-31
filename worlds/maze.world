@@ -5,11 +5,6 @@
       name="gz::sim::systems::Physics">
     </plugin>
     <plugin
-      filename="gz-sim-sensors-system"
-      name="gz::sim::systems::Sensors">
-      <render_engine>ogre2</render_engine>
-    </plugin>
-    <plugin
       filename="gz-sim-user-commands-system"
       name="gz::sim::systems::UserCommands">
     </plugin>
@@ -902,134 +897,320 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>-0.098953 -0.033482 0 0 -0 0</pose>
     </model>
-    <state world_name='default'>
-      <sim_time>10 336000000</sim_time>
-      <real_time>11 69303485</real_time>
-      <wall_time>1777005513 751993419</wall_time>
-      <iterations>10336</iterations>
-      <model name='ground_plane'>
-        <pose>0 0 0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>0 0 0 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='mapcorreg'>
-        <pose>-0.098953 -0.033482 0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <model name='newmap'>
-          <pose>-0.098953 -0.033482 0 0 -0 0</pose>
-          <scale>1 1 1</scale>
-          <link name='Wall_11'>
-            <pose>-1.7391 -0.033948 0 0 0 -1.56953</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_14'>
-            <pose>1.54131 -0.033482 0 0 -0 1.5696</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_15'>
-            <pose>-0.096789 1.59383 0 0 0 -3.14131</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_17'>
-            <pose>-1.40321 0.284408 0 0 -0 0.000206</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_19'>
-            <pose>-1.07647 0.597475 0 0 -0 1.5692</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_21'>
-            <pose>-0.432998 0.910702 0 0 -0 0.000352</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_22'>
-            <pose>0.209973 0.598239 0 0 0 -1.5708</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_24'>
-            <pose>0.848386 1.21762 0 0 -0 1.57201</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_28'>
-            <pose>-1.07797 -1.32502 0 0 -0 1.5708</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_31'>
-            <pose>1.14253 0.286227 0 0 0 -0.002614</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_33'>
-            <pose>0.85188 -0.35366 0 0 0 -1.57061</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_35'>
-            <pose>0.51234 -0.356525 0 0 -0 3.14159</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_37'>
-            <pose>0.210396 -1.31052 0 0 0 -1.56535</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_39'>
-            <pose>-0.108637 -1.01066 0 0 0 -3.14117</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_41'>
-            <pose>-0.429305 -0.369822 0 0 -0 1.5708</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_43'>
-            <pose>-0.798969 -0.356525 0 0 -0 0</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-          <link name='Wall_8'>
-            <pose>-0.098847 -1.66125 0 0 -0 0</pose>
-            <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0 0 0 0 -0 0</acceleration>
-            <wrench>0 0 0 0 -0 0</wrench>
-          </link>
-        </model>
-      </model>
-      <light name='sun'>
-        <pose>0 0 10 0 -0 0</pose>
-      </light>
-    </state>
+
+    <!-- simulated_aruco_markers_start -->
+    <model name='aruco_70'>
+      <static>true</static>
+      <pose>-1.400 0.240 0.240 0 0 0.0000</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_70.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_706'>
+      <static>true</static>
+      <pose>-0.430 0.866 0.240 0 0 0.0000</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_706.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_75'>
+      <static>true</static>
+      <pose>0.868 1.220 0.240 0 0 -1.5708</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_75.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_701'>
+      <static>true</static>
+      <pose>1.140 0.242 0.240 0 0 0.0000</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_701.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_703'>
+      <static>true</static>
+      <pose>0.872 -0.350 0.240 0 0 -1.5708</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_703.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_705'>
+      <static>true</static>
+      <pose>-0.110 -1.055 0.240 0 0 0.0000</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_705.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_708'>
+      <static>true</static>
+      <pose>-0.408 -0.370 0.240 0 0 -1.5708</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_708.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <model name='aruco_702'>
+      <static>true</static>
+      <pose>0.231 -1.310 0.240 0 0 -1.5708</pose>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+        </collision>
+        <visual name='blue_backplate'>
+          <cast_shadows>0</cast_shadows>
+          <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
+          <material>
+            <ambient>0.0 0.15 1.0 1</ambient>
+            <diffuse>0.0 0.15 1.0 1</diffuse>
+            <emissive>0.0 0.05 0.4 1</emissive>
+          </material>
+        </visual>
+        <visual name='aruco_texture'>
+          <cast_shadows>0</cast_shadows>
+          <pose>0.008 0 0 1.5708 0 1.5708</pose>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>0.20 0.20</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>1 1 1 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+            <pbr>
+              <metal>
+                <albedo_map>file:///home/karinam/MCR2_Final_Challenge/worlds/aruco_textures/aruco_702.png</albedo_map>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <!-- simulated_aruco_markers_end -->
   </world>
 </sdf>

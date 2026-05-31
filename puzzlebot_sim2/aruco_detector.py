@@ -26,6 +26,7 @@ class ArucoDetector(Node):
         self.declare_parameter('k2', 0.0)
         self.declare_parameter('p1', 0.0)
         self.declare_parameter('p2', 0.0)
+        self.declare_parameter('aruco_dictionary', 'DICT_4X4_1000')
 
         self.marker_size = float(self.get_parameter('marker_size_m').value)
         self.fx = float(self.get_parameter('fx').value)
@@ -36,6 +37,7 @@ class ArucoDetector(Node):
         self.k2 = float(self.get_parameter('k2').value)
         self.p1 = float(self.get_parameter('p1').value)
         self.p2 = float(self.get_parameter('p2').value)
+        self.aruco_dictionary = str(self.get_parameter('aruco_dictionary').value)
 
         self.camera_matrix = np.array([
             [self.fx, 0, self.cx],
@@ -44,9 +46,17 @@ class ArucoDetector(Node):
         ], dtype=np.float32)
         self.dist_coeffs = np.array([self.k1, self.k2, self.p1, self.p2, 0.0], dtype=np.float32)
 
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        self.aruco_params = cv2.aruco.DetectorParameters()
-        self.aruco_detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+        dictionary_id = getattr(cv2.aruco, self.aruco_dictionary, cv2.aruco.DICT_4X4_1000)
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(dictionary_id)
+        if hasattr(cv2.aruco, 'DetectorParameters'):
+            self.aruco_params = cv2.aruco.DetectorParameters()
+        else:
+            self.aruco_params = cv2.aruco.DetectorParameters_create()
+
+        if hasattr(cv2.aruco, 'ArucoDetector'):
+            self.aruco_detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+        else:
+            self.aruco_detector = None
 
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -80,11 +90,16 @@ class ArucoDetector(Node):
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         elif msg.encoding == 'bgr8':
             img = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape((msg.height, msg.width, 3))
+        elif msg.encoding in ('mono8', '8UC1'):
+            img = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape((msg.height, msg.width))
         else:
             self.get_logger().warn('Unsupported image encoding: %s' % msg.encoding)
             return
 
-        corners, ids, _ = self.aruco_detector.detectMarkers(img)
+        if self.aruco_detector is not None:
+            corners, ids, _ = self.aruco_detector.detectMarkers(img)
+        else:
+            corners, ids, _ = cv2.aruco.detectMarkers(img, self.aruco_dict, parameters=self.aruco_params)
         if ids is None or len(ids) == 0:
             return
 

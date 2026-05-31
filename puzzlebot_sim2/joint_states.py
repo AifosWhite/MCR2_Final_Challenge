@@ -38,7 +38,7 @@ class JointPublisher(Node):
         self.joint_state_pub = self.create_publisher(JointState, 'joint_states', 10)
 
         self.joint_state_msg = JointState()
-        self.joint_state_msg.name = ['wheel_r_joint', 'wheel_l_joint']
+        self.joint_state_msg.name = ['wheel_right_joint', 'wheel_left_joint']
         self.joint_state_msg.position = [0.0, 0.0]
         self.joint_state_msg.velocity = [0.0, 0.0]
         self.joint_state_msg.effort = [0.0, 0.0]

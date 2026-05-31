@@ -4,6 +4,15 @@ from glob import glob
 
 package_name = 'puzzlebot_sim2'
 
+
+def package_files(directory):
+    paths = []
+    for path, _, filenames in os.walk(directory):
+        files = [os.path.join(path, f) for f in filenames]
+        if files:
+            paths.append((os.path.join('share', package_name, path), files))
+    return paths
+
 setup(
     name=package_name,
     version='0.1.0',
@@ -13,13 +22,10 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
         (os.path.join('share', package_name, 'config'), glob(os.path.join('config', '*.[yma]*'))),
-        (os.path.join('share', package_name, 'rviz'), glob(os.path.join('rviz', '*.rviz'))),
-        (os.path.join('share', package_name, 'meshes'), glob(os.path.join('meshes', '*.stl'))),
-        (os.path.join('share', package_name, 'urdf'), glob(os.path.join('urdf', '*.urdf'))),
-        (os.path.join('share', package_name, 'docs'), glob(os.path.join('docs', '*.md'))),
-        (os.path.join('share', package_name, 'scripts'), glob(os.path.join('scripts', '*.sh'))),
         (os.path.join('share', package_name, 'worlds'), glob(os.path.join('worlds', '*.world'))),
-        (os.path.join('share', package_name, 'maps'), glob(os.path.join('maps', '*'))),
+        *package_files('worlds/aruco_textures'),
+        *package_files('meshes'),
+        *package_files('urdf'),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -31,11 +37,13 @@ setup(
     entry_points={
         'console_scripts': [
             'simulator = puzzlebot_sim2.simulator:main',
+            'sim_lidar_node = puzzlebot_sim2.sim_lidar_node:main',
+            'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
             'localisation = puzzlebot_sim2.localisation:main',
             'joint_states = puzzlebot_sim2.joint_states:main',
-            'final_bug_nav = puzzlebot_sim2.final_bug_nav:main',
+            'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
             'aruco_detector = puzzlebot_sim2.aruco_detector:main',
-            'covariance_marker = puzzlebot_sim2.covariance_marker:main',
+            'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',
         ],
     },
 )

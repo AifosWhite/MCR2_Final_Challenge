@@ -1,27 +1,27 @@
 import os
 
-from launch.actions import ExecuteProcess
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import TimerAction
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('puzzlebot_sim2')
-    urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
-    rviz_config = os.path.join(pkg_dir, 'rviz', 'final_challenge.rviz')
-    nav_params = os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml')
+    xacro_file = os.path.join(pkg_dir, 'urdf', 'mcr2_robots', 'puzzlebot_jetson_lidar_ed.xacro')
     loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
     world_file = os.path.join(pkg_dir, 'worlds', 'maze.world')
+    use_camera_arucos = LaunchConfiguration('use_camera_arucos')
+
     gazebo = ExecuteProcess(
         cmd=['gz', 'sim', world_file, '-r'],
         output='screen'
     )
 
-    with open(urdf_file, 'r') as infp:
-        robot_desc = infp.read()
+    robot_desc = Command(['xacro ', xacro_file])
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -31,6 +31,23 @@ def generate_launch_description():
         parameters=[
             {'robot_description': robot_desc},
             {'use_sim_time': False},
+        ],
+    )
+
+    spawn_robot = TimerAction(
+        period=2.0,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    'ros2', 'run', 'ros_gz_sim', 'create',
+                    '-topic', 'robot_description',
+                    '-name', 'puzzlebot',
+                    '-x', '0.0',
+                    '-y', '0.0',
+                    '-z', '0.05',
+                ],
+                output='screen',
+            )
         ],
     )
 
@@ -63,7 +80,25 @@ def generate_launch_description():
         output='screen',
     )
     
+    sim_lidar = Node(
+        package='puzzlebot_sim2',
+        executable='sim_lidar_node',
+        name='sim_lidar_node',
+        output='screen',
+        parameters=[{'world_file': world_file}],
+    )
+
+    camera_bridge = ExecuteProcess(
+        condition=IfCondition(use_camera_arucos),
+        cmd=[
+            'ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
+            '/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
+        ],
+        output='screen',
+    )
+
     aruco_detector = Node(
+        condition=IfCondition(use_camera_arucos),
         package='puzzlebot_sim2',
         executable='aruco_detector',
         name='aruco_detector',
@@ -71,56 +106,33 @@ def generate_launch_description():
         parameters=[loc_params],
     )
 
-    covariance_marker = Node(
+    sim_aruco = Node(
+        condition=UnlessCondition(use_camera_arucos),
         package='puzzlebot_sim2',
-        executable='covariance_marker',
-        name='covariance_marker',
+        executable='sim_aruco_node',
+        name='sim_aruco_node',
         output='screen',
     )
 
-    final_bug_nav = Node(
+    reactive_navigation = Node(
         package='puzzlebot_sim2',
-        executable='final_bug_nav',
-        name='final_bug_nav',
+        executable='reactive_navigation_node',
+        name='reactive_navigation_node',
         output='screen',
-        parameters=[nav_params],
-    )
-
-    rviz = TimerAction(
-        period=2.0,
-        actions=[
-            Node(
-                package='rviz2',
-                executable='rviz2',
-                name='rviz2',
-                output='screen',
-                arguments=['-d', rviz_config],
-                parameters=[{'use_sim_time': False}],
-            )
-        ],
-    )
-
-    rqt_graph = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package='rqt_graph',
-                executable='rqt_graph',
-                name='rqt_graph',
-                output='screen',
-            )
-        ],
+        parameters=[{'bug_algorithm': 2}],
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument('use_camera_arucos', default_value='false'),
         gazebo,
         robot_state_publisher,
+        spawn_robot,
         simulator,
         localisation,
         joint_states,
+        sim_lidar,
+        camera_bridge,
         aruco_detector,
-        covariance_marker,
-        final_bug_nav,
-        rviz,
-        rqt_graph,
+        sim_aruco,
+        reactive_navigation,
     ])
