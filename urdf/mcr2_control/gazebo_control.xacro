@@ -6,7 +6,7 @@
     <gazebo>
 
 
-        <!--<plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+        <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
             <odom_publisher_frequency>50</odom_publisher_frequency>
             <left_joint>${prefix}wheel_left_joint</left_joint>
             <right_joint>${prefix}wheel_right_joint</right_joint>
@@ -19,7 +19,7 @@
             <child_frame_id>${prefix}base_footprint</child_frame_id>
             <max_angular_acceleration>1.8</max_angular_acceleration>
             <max_angular_velocity>13.0</max_angular_velocity>
-        </plugin>-->
+        </plugin>
     
         
         <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">

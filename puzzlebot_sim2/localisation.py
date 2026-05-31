@@ -31,9 +31,10 @@ class Localisation(Node):
         self.declare_parameter('use_ekf', True)
         self.declare_parameter('ekf_r_dist', 0.05)
         self.declare_parameter('ekf_r_bearing', 0.05)
-        self.declare_parameter('marker_ids', [70, 706, 75, 701, 703, 705, 708, 702])
-        self.declare_parameter('marker_pos_x', [-1.300, -0.780, 0.830, -1.565, 0.560, -0.230, -0.270, 0.365])
-        self.declare_parameter('marker_pos_y', [0.252, 0.820, 1.120, -0.420, -0.205, -0.880, -0.250, -1.150])
+        self.declare_parameter('use_ground_truth_pose', False)
+        self.declare_parameter('marker_ids', [705, 706, 70, 703, 708, 75, 702])
+        self.declare_parameter('marker_pos_x', [-0.500, -0.500, -1.300, 0.400, -0.350, 0.800, 0.300])
+        self.declare_parameter('marker_pos_y', [-0.880, 0.820, 0.200, -0.280, -0.250, 1.120, -1.150])
 
         self.r = float(self.get_parameter('wheel_radius').value)
         self.L = float(self.get_parameter('wheel_base').value)
@@ -49,6 +50,11 @@ class Localisation(Node):
         self.use_ekf = bool(self.get_parameter('use_ekf').value)
         self.ekf_r_dist = float(self.get_parameter('ekf_r_dist').value)
         self.ekf_r_bearing = float(self.get_parameter('ekf_r_bearing').value)
+        ground_truth_value = self.get_parameter('use_ground_truth_pose').value
+        if isinstance(ground_truth_value, str):
+            self.use_ground_truth_pose = ground_truth_value.lower() in ('1', 'true', 'yes')
+        else:
+            self.use_ground_truth_pose = bool(ground_truth_value)
 
         ids = list(self.get_parameter('marker_ids').value)
         xs = list(self.get_parameter('marker_pos_x').value)
@@ -59,10 +65,12 @@ class Localisation(Node):
         self.wl = 0.0
         self.sigma = np.zeros((3, 3))
         self.latest_detection = None
+        self.latest_ground_truth = None
 
         self.create_subscription(Float32, 'wr', self.wr_callback, 10)
         self.create_subscription(Float32, 'wl', self.wl_callback, 10)
         self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
+        self.create_subscription(Odometry, '/ground_truth', self.ground_truth_callback, 10)
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_broadcaster = StaticTransformBroadcaster(self)
@@ -89,6 +97,16 @@ class Localisation(Node):
         if len(msg.data) >= 3:
             self.latest_detection = int(msg.data[0]), float(msg.data[1]), float(msg.data[2])
 
+    def ground_truth_callback(self, msg):
+        q = msg.pose.pose.orientation
+        siny = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        self.latest_ground_truth = (
+            float(msg.pose.pose.position.x),
+            float(msg.pose.pose.position.y),
+            math.atan2(siny, cosy),
+        )
+
     def step(self):
         v = self.r * (self.wr + self.wl) / 2.0
         w = self.r * (self.wr - self.wl) / self.L
@@ -112,6 +130,9 @@ class Localisation(Node):
         self.y += v * s * self.dt
         self.theta += w * self.dt
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        if self.use_ground_truth_pose and self.latest_ground_truth is not None:
+            self.x, self.y, self.theta = self.latest_ground_truth
 
         if self.use_ekf and self.latest_detection is not None:
             marker_id, dist, bearing = self.latest_detection

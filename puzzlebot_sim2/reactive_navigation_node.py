@@ -178,7 +178,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.publish_cmd(0.0, 0.0)
+        if rclpy.ok():
+            node.publish_cmd(0.0, 0.0)
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
