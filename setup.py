@@ -43,6 +43,7 @@ setup(
             'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
             'aruco_detector = puzzlebot_sim2.aruco_detector:main',
             'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',
+            'joint_states = puzzlebot_sim2.joint_states:main',
         ],
     },
 )

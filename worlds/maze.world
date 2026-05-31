@@ -901,7 +901,7 @@
     <!-- simulated_aruco_markers_start -->
     <model name='aruco_70'>
       <static>true</static>
-      <pose>-1.403 0.224 0.240 0 0 -1.5708</pose>
+      <pose>-1.510 -0.620 0.240 0 0 0.0000</pose>
       <link name='link'>
         <collision name='collision'>
           <geometry><box><size>0.012 0.24 0.24</size></box></geometry>
@@ -940,7 +940,7 @@
     </model>
     <model name='aruco_706'>
       <static>true</static>
-      <pose>-0.433 0.854 0.240 0 0 -1.5708</pose>
+      <pose>-0.250 0.885 0.240 0 0 -1.5708</pose>
       <link name='link'>
         <collision name='collision'>
           <geometry><box><size>0.012 0.24 0.24</size></box></geometry>

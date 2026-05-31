@@ -13,8 +13,8 @@ class SimArucoNode(Node):
         self.fov_deg = 60.0
         self.fov_rad = math.radians(self.fov_deg)
         self.marker_ids = [70, 706, 75, 701, 703, 705, 708, 702]
-        self.marker_x = [-1.403, -0.433, 0.792, 1.143, 0.792, -0.109, -0.373, 0.266]
-        self.marker_y = [0.224, 0.854, 1.218, 0.230, -0.354, -1.067, -0.370, -1.311]
+        self.marker_x = [-1.510, -0.250, 0.792, 1.143, 0.792, -0.109, -0.373, 0.266]
+        self.marker_y = [-0.620, 0.885, 1.218, 0.230, -0.354, -1.067, -0.370, -1.311]
         self.markers = []
         for i in range(len(self.marker_ids)):
             self.markers.append((self.marker_ids[i], self.marker_x[i], self.marker_y[i]))

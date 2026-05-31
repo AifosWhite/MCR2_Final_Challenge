@@ -76,6 +76,13 @@ def generate_launch_description():
         parameters=[loc_params],
     )
 
+    joint_states = Node(
+        package='puzzlebot_sim2',
+        executable='joint_states',
+        name='joint_states',
+        output='screen',
+    )
+
     sim_lidar = Node(
         package='puzzlebot_sim2',
         executable='sim_lidar_node',
@@ -126,6 +133,7 @@ def generate_launch_description():
         spawn_robot,
         simulator,
         localisation,
+        joint_states,
         sim_lidar,
         camera_bridge,
         aruco_detector,

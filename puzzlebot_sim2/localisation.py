@@ -32,8 +32,8 @@ class Localisation(Node):
         self.declare_parameter('ekf_r_dist', 0.05)
         self.declare_parameter('ekf_r_bearing', 0.05)
         self.declare_parameter('marker_ids', [70, 706, 75, 701, 703, 705, 708, 702])
-        self.declare_parameter('marker_pos_x', [-1.403, -0.433, 0.792, 1.143, 0.792, -0.109, -0.373, 0.266])
-        self.declare_parameter('marker_pos_y', [0.224, 0.854, 1.218, 0.230, -0.354, -1.067, -0.370, -1.311])
+        self.declare_parameter('marker_pos_x', [-1.510, -0.250, 0.792, 1.143, 0.792, -0.109, -0.373, 0.266])
+        self.declare_parameter('marker_pos_y', [-0.620, 0.885, 1.218, 0.230, -0.354, -1.067, -0.370, -1.311])
 
         self.r = float(self.get_parameter('wheel_radius').value)
         self.L = float(self.get_parameter('wheel_base').value)
