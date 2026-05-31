@@ -1,75 +1,81 @@
-# puzzlebot_sim2 — clean package for MCR2 Final Challenge
+# MCR2 Final Challenge
 
-This package is intended to be copied into:
+Paquete ROS 2 sencillo para simular el Puzzlebot con:
 
-```bash
-~/manchester/src/finalchallenge/puzzlebot_sim2
-```
+- odometria por ruedas
+- localizacion con covarianza y correccion EKF por ArUco
+- LiDAR simulado del laberinto
+- navegacion reactiva tipo Bug 2 con trayectoria cerrada de 4 puntos
 
-It keeps the final challenge work separated from the original Manchester packages.
+## Archivos que si se usan
 
-## Main structure
+Estos son los importantes para el proyecto:
 
 ```text
-puzzlebot_sim2/
-├── config/                         # Parameters for localisation and navigation
-├── docs/                           # Team handoff and debug checklist
-├── launch/                         # Clean launch files
-├── meshes/                         # Puzzlebot STL meshes
-├── puzzlebot_sim2/                 # Python nodes
-├── rviz/                           # RViz configuration
-├── scripts/                        # Team helper scripts
-├── urdf/                           # Puzzlebot robot description
-├── package.xml
-└── setup.py
+package.xml
+setup.py
+setup.cfg
+resource/puzzlebot_sim2
+config/localisation.yaml
+launch/final_challenge.launch.py
+puzzlebot_sim2/simulator.py
+puzzlebot_sim2/localisation.py
+puzzlebot_sim2/sim_lidar_node.py
+puzzlebot_sim2/sim_aruco_node.py
+puzzlebot_sim2/reactive_navigation_node.py
+puzzlebot_sim2/aruco_detector.py
+puzzlebot_sim2/aruco_marker_bridge.py
+worlds/maze.world
+worlds/aruco_textures/
+urdf/
+meshes/
+rviz/puzzlebot_desc.rviz
 ```
 
-## Install
+## Archivos que no necesitas tocar
+
+Estos no son parte de la entrega principal o se generan solos:
+
+```text
+build/
+install/
+log/
+__pycache__/
+puzzlebot_sim/
+launch/real_robot.launch.py
+```
+
+`puzzlebot_sim/` queda como referencia vieja de clase. Para correr este proyecto se usa `puzzlebot_sim2/`.
+
+## Compilar
 
 ```bash
-cd ~/manchester/src
-mkdir -p finalchallenge
-cp -r /path/to/puzzlebot_sim2 ~/manchester/src/finalchallenge/
-cd ~/manchester
+cd ~/MCR2_Final_Challenge
 colcon build --packages-select puzzlebot_sim2 --symlink-install
 source install/setup.bash
 ```
 
-## Launches
+## Correr la simulacion
 
-Base visual/localisation test:
-
-```bash
-ros2 launch puzzlebot_sim2 sim_base.launch.py
-```
-
-Full local stack:
+Simulacion limpia con nodos ROS:
 
 ```bash
 ros2 launch puzzlebot_sim2 final_challenge.launch.py
 ```
 
-Navigation only, for use with an external Manchester/Gazebo world:
+Si tambien quieres abrir el mundo de Gazebo:
 
 ```bash
-ros2 launch puzzlebot_sim2 navigation_only.launch.py
+ros2 launch puzzlebot_sim2 final_challenge.launch.py use_gazebo:=true
 ```
 
-## Current limitation
-
-`final_bug_nav.py` requires `/scan`. The local clean simulator does not generate LiDAR data by itself. If `/scan` is missing, navigation will wait and publish zero velocity.
-
-Check:
+## Revisar que esta corriendo
 
 ```bash
-ros2 topic list | grep scan
+ros2 topic list
+ros2 topic echo /odom
+ros2 topic echo /scan
+ros2 topic echo /cmd_vel
 ```
 
-## Team docs
-
-Read these before testing:
-
-```text
-docs/TEAM_HANDOFF.md
-docs/DEBUG_CHECKLIST.md
-```
+La meta se recorre como trayectoria cerrada con 4 waypoints. Si quieres cambiarla, edita `waypoints_x` y `waypoints_y` en `reactive_navigation_node.py`.

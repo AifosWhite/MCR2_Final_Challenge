@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 import os
 from glob import glob
 
@@ -16,7 +16,7 @@ def package_files(directory):
 setup(
     name=package_name,
     version='0.1.0',
-    packages=find_packages(exclude=['test']),
+    packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
@@ -40,7 +40,6 @@ setup(
             'sim_lidar_node = puzzlebot_sim2.sim_lidar_node:main',
             'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
             'localisation = puzzlebot_sim2.localisation:main',
-            'joint_states = puzzlebot_sim2.joint_states:main',
             'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
             'aruco_detector = puzzlebot_sim2.aruco_detector:main',
             'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',

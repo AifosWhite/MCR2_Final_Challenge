@@ -15,8 +15,10 @@ def generate_launch_description():
     loc_params = os.path.join(pkg_dir, 'config', 'localisation.yaml')
     world_file = os.path.join(pkg_dir, 'worlds', 'maze.world')
     use_camera_arucos = LaunchConfiguration('use_camera_arucos')
+    use_gazebo = LaunchConfiguration('use_gazebo')
 
     gazebo = ExecuteProcess(
+        condition=IfCondition(use_gazebo),
         cmd=['gz', 'sim', world_file, '-r'],
         output='screen'
     )
@@ -35,6 +37,7 @@ def generate_launch_description():
     )
 
     spawn_robot = TimerAction(
+        condition=IfCondition(use_gazebo),
         period=2.0,
         actions=[
             ExecuteProcess(
@@ -73,13 +76,6 @@ def generate_launch_description():
         parameters=[loc_params],
     )
 
-    joint_states = Node(
-        package='puzzlebot_sim2',
-        executable='joint_states',
-        name='joint_states',
-        output='screen',
-    )
-    
     sim_lidar = Node(
         package='puzzlebot_sim2',
         executable='sim_lidar_node',
@@ -124,12 +120,12 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('use_camera_arucos', default_value='false'),
+        DeclareLaunchArgument('use_gazebo', default_value='false'),
         gazebo,
         robot_state_publisher,
         spawn_robot,
         simulator,
         localisation,
-        joint_states,
         sim_lidar,
         camera_bridge,
         aruco_detector,

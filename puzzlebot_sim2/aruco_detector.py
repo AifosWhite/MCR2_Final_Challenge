@@ -6,31 +6,20 @@ import numpy as np
 import math
 import cv2
 
+
 class ArucoDetector(Node):
     def __init__(self):
         super().__init__('aruco_detector')
-        self.declare_parameter('marker_size_m', 0.14)
-        self.declare_parameter('fx', 554.0)
-        self.declare_parameter('fy', 554.0)
-        self.declare_parameter('cx', 320.0)
-        self.declare_parameter('cy', 240.0)
-        self.declare_parameter('k1', 0.0)
-        self.declare_parameter('k2', 0.0)
-        self.declare_parameter('p1', 0.0)
-        self.declare_parameter('p2', 0.0)
-        self.declare_parameter('aruco_dictionary', 'DICT_4X4_1000')
-
-        self.marker_size = self.get_parameter('marker_size_m').get_parameter_value().double_value
-        fx = self.get_parameter('fx').get_parameter_value().double_value
-        fy = self.get_parameter('fy').get_parameter_value().double_value
-        cx = self.get_parameter('cx').get_parameter_value().double_value
-        cy = self.get_parameter('cy').get_parameter_value().double_value
-        k1 = self.get_parameter('k1').get_parameter_value().double_value
-        k2 = self.get_parameter('k2').get_parameter_value().double_value
-        p1 = self.get_parameter('p1').get_parameter_value().double_value
-        p2 = self.get_parameter('p2').get_parameter_value().double_value
-        dict_name = self.get_parameter('aruco_dictionary').get_parameter_value().string_value
-
+        self.marker_size = 0.14
+        fx = 554.0
+        fy = 554.0
+        cx = 320.0
+        cy = 240.0
+        k1 = 0.0
+        k2 = 0.0
+        p1 = 0.0
+        p2 = 0.0
+        dict_name = 'DICT_4X4_1000'
         self.camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32)
         self.dist_coeffs = np.array([k1, k2, p1, p2, 0.0], dtype=np.float32)
         self.dictionary = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, dict_name, cv2.aruco.DICT_4X4_1000))
