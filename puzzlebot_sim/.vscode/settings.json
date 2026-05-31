@@ -1,12 +1,14 @@
 {
     "ROS2.distro": "humble",
     "python.autoComplete.extraPaths": [
-        "/home/karinam/MCR2_Final_Challenge/install/puzzlebot_sim2/lib/python3.10/site-packages",
+        "/home/karinam/ros2_ws/install/puzzlebot_sim/lib/python3.10/site-packages",
+        "/home/karinam/ros2_ws/install/mobile_robotics/lib/python3.10/site-packages",
         "/opt/ros/humble/lib/python3.10/site-packages",
         "/opt/ros/humble/local/lib/python3.10/dist-packages"
     ],
     "python.analysis.extraPaths": [
-        "/home/karinam/MCR2_Final_Challenge/install/puzzlebot_sim2/lib/python3.10/site-packages",
+        "/home/karinam/ros2_ws/install/puzzlebot_sim/lib/python3.10/site-packages",
+        "/home/karinam/ros2_ws/install/mobile_robotics/lib/python3.10/site-packages",
         "/opt/ros/humble/lib/python3.10/site-packages",
         "/opt/ros/humble/local/lib/python3.10/dist-packages"
     ]

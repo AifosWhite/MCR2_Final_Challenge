@@ -11,6 +11,9 @@ __pycache__/
 .vscode/*.db
 .vscode/*.db-shm
 .vscode/*.db-wal
+**/.vscode/*.db
+**/.vscode/*.db-shm
+**/.vscode/*.db-wal
 
 # Opcional: caches
 .cache/
