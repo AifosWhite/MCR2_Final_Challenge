@@ -30,7 +30,6 @@ setup(
             'localisation = puzzlebot_sim2.localisation:main',
             'joint_states = puzzlebot_sim2.joint_states:main',
             'final_bug_nav = puzzlebot_sim2.final_bug_nav:main',
-            'aruco_tf_listener = puzzlebot_sim2.aruco_tf_listener:main',
             'aruco_ekf_localisation = puzzlebot_sim2.aruco_ekf_localisation:main',
         ],
     },

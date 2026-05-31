@@ -1,9 +1,0 @@
-aruco_jetson:
-  ros__parameters:
-    camera_resource: "csi://0"
-    width: 1280
-    height: 720
-    calibration_file: "file:///home/puzzlebot/.ros/jetson_cam.yaml"
-    camera_frame: "camera"
-    reference_frame: "base_link"
-    marker_size: 0.165

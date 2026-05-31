@@ -23,8 +23,6 @@ puzzlebot_sim2/      Python ROS2 nodes
 resource/            ament package marker
 rviz/                RViz configuration
 urdf/                Puzzlebot URDF model with LiDAR link
-calibration/         Placeholder for camera calibration files
- tools/vision_reference/  Standalone ArUco/camera calibration reference scripts
 package.xml
 setup.py
 setup.cfg
@@ -57,10 +55,6 @@ The marker map is configured in:
 ```text
 config/aruco_ekf.yaml
 ```
-
-### `aruco_tf_listener.py`
-
-Small validation node that listens to a marker TF, for example `base_link -> marker_0`, and prints the marker distance and bearing.
 
 ### `simulator.py`
 
@@ -115,20 +109,12 @@ Use this when the simulator or real robot is already providing the sensor topics
 ros2 launch puzzlebot_sim2 final_challenge.launch.py
 ```
 
-### Real robot ArUco test
+### Real robot challenge
 
-Use this on the Puzzlebot Jetson when testing the camera and ArUco detection pipeline.
-
-```bash
-ros2 launch puzzlebot_sim2 aruco_jetson.launch.py
-```
-
-### ArUco EKF test
-
-Use this after ArUco marker TFs are available.
+Use this on the Puzzlebot Jetson to run the real robot challenge flow with camera, ArUco localisation, and Bug navigation.
 
 ```bash
-ros2 launch puzzlebot_sim2 aruco_ekf.launch.py
+ros2 launch puzzlebot_sim2 real_challenge.launch.py
 ```
 
 ## Required topics

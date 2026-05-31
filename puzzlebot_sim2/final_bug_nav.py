@@ -33,6 +33,9 @@ class FinalBugNavigation(Node):
         self.declare_parameter('bug_direction', 'fwcw')  # fwcw or fwccw
         self.declare_parameter('run_waypoint_sequence', True)
         self.declare_parameter('loop_closed_path', False)
+        # Legacy / alternative parameter names kept for compatibility with configs
+        self.declare_parameter('use_waypoints', False)
+        self.declare_parameter('loop_waypoints', False)
         self.declare_parameter('goal_topic', 'goal_pose')
         self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('scan_topic', 'scan')
@@ -40,9 +43,13 @@ class FinalBugNavigation(Node):
 
         # Four target points arranged to force obstacle circumnavigation.
         # Tune these to the final Gazebo world dimensions.
+        # Declare both canonical and legacy waypoint parameter names.
         self.declare_parameter('waypoints_x', [1.20, 1.20, -0.80, -0.80, 0.00])
         self.declare_parameter('waypoints_y', [0.80, -0.80, -0.80, 0.80, 0.00])
         self.declare_parameter('waypoints_theta', [0.0, -1.57, 3.14, 1.57, 0.0])
+        self.declare_parameter('waypoint_x', [])
+        self.declare_parameter('waypoint_y', [])
+        self.declare_parameter('waypoint_theta', [])
 
         # Controller parameters
         self.declare_parameter('timer_period', 0.05)  # 20 Hz control loop
@@ -63,8 +70,14 @@ class FinalBugNavigation(Node):
 
         self.bug_mode = int(self.get_parameter('bug_mode').value)
         self.bug_direction = str(self.get_parameter('bug_direction').value)
-        self.run_waypoint_sequence = bool(self.get_parameter('run_waypoint_sequence').value)
-        self.loop_closed_path = bool(self.get_parameter('loop_closed_path').value)
+        # Support both new and legacy parameter names for enabling waypoints/looping.
+        run_waypoint = bool(self.get_parameter('run_waypoint_sequence').value)
+        legacy_use = bool(self.get_parameter('use_waypoints').value)
+        self.run_waypoint_sequence = run_waypoint or legacy_use
+
+        loop_way = bool(self.get_parameter('loop_closed_path').value)
+        legacy_loop = bool(self.get_parameter('loop_waypoints').value)
+        self.loop_closed_path = loop_way or legacy_loop
 
         self.goal_topic = str(self.get_parameter('goal_topic').value)
         self.odom_topic = str(self.get_parameter('odom_topic').value)
@@ -92,9 +105,26 @@ class FinalBugNavigation(Node):
         self.leave_goal_improvement = float(self.get_parameter('leave_goal_improvement').value)
         self.min_wall_follow_time = float(self.get_parameter('min_wall_follow_time').value)
 
+        # Load waypoint arrays: prefer canonical names, fall back to legacy ones if present.
+        default_waypoints_x = [1.20, 1.20, -0.80, -0.80, 0.00]
+        default_waypoints_y = [0.80, -0.80, -0.80, 0.80, 0.00]
+
         xs = list(self.get_parameter('waypoints_x').value)
         ys = list(self.get_parameter('waypoints_y').value)
         ths = list(self.get_parameter('waypoints_theta').value)
+        legacy_x = list(self.get_parameter('waypoint_x').value)
+        legacy_y = list(self.get_parameter('waypoint_y').value)
+        legacy_th = list(self.get_parameter('waypoint_theta').value)
+
+        # Prefer explicit canonical parameters, but fall back to legacy parameters
+        # if the old-style arrays are provided and the canonical arrays appear to be
+        # still the default placeholder values.
+        if legacy_x and legacy_y and (
+            not xs or not ys or xs == default_waypoints_x and ys == default_waypoints_y
+        ):
+            xs = legacy_x
+            ys = legacy_y
+            ths = legacy_th if legacy_th else [0.0] * len(xs)
         self.waypoints = self.build_waypoints(xs, ys, ths)
         self.waypoint_index = 0
 
