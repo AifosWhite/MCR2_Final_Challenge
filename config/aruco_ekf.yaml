@@ -12,10 +12,17 @@ aruco_ekf_localisation:
     output_topic: "ekf_odom"
     timer_period: 0.05
 
-    # Map position of the ArUco markers used for EKF correction.
-    # Tune these coordinates to the final Gazebo/physical setup.
-    marker_ids: [0, 1, 2, 3]
-    marker_x: [1.0, 1.0, -1.0, -1.0]
-    marker_y: [1.0, -1.0, -1.0, 1.0]
+    # Posiciones de los 8 marcadores fisicos ArUco (DICT_4X4_1000) para la
+    # correccion EKF. Maze exterior 3.43 x 3.41 m, centro en (0,0).
+    # ADVERTENCIA: estas posiciones son APROXIMADAS (deducidas de un boceto a
+    # mano). RE-MEDIR cada marcador con cinta antes de la corrida real: el EKF
+    # es muy sensible a errores de pocos cm en la posicion del marcador.
+    # (Nota de mapeo: el nodo usa marker_x/marker_y, no marker_pos_x/_y.)
+    marker_ids: [70,    706,   75,    701,   703,   705,   708,   702 ]
+    marker_x:   [-1.55, -0.35, 0.95,  0.95,  0.61,  0.31,  -0.33, 0.31 ]
+    marker_y:   [ 0.30,  0.95, 1.25, -0.32, -0.32, -0.60, -0.34, -1.28]
     marker_frame_prefix: "marker_"
-    measurement_noise_xy: 0.03
+    # Modelo de medicion rango-azimut (como en la presentacion):
+    # desviacion estandar del rango (m) y del azimut (rad).
+    measurement_noise_range: 0.05
+    measurement_noise_bearing: 0.02
