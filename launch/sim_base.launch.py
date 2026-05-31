@@ -73,15 +73,24 @@ def generate_launch_description():
         ],
     )
 
+    final_bug_nav = Node(
+        package='puzzlebot_sim2',
+        executable='final_bug_nav',
+        name='final_bug_nav',
+        output='screen',
+        parameters=[os.path.join(pkg_dir, 'config', 'final_bug_nav.yaml'), {'use_sim_time': use_sim_time}],
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
-            default_value='false',
+            default_value='true',
             description='Use simulation time from /clock.',
         ),
         robot_state_publisher,
         simulator,
         localisation,
         joint_states,
+        final_bug_nav,
         rviz,
     ])

@@ -4,7 +4,7 @@ final_bug_nav:
     bug_direction: "fwcw"
 
     scan_topic: "scan"
-    odom_topic: "ground_truth"
+    odom_topic: "odom"
     cmd_vel_topic: "cmd_vel"
 
     goal_tolerance: 0.18
