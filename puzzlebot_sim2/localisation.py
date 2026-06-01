@@ -6,6 +6,7 @@ from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from std_msgs.msg import Float32, Float32MultiArray
+from rclpy.qos import qos_profile_sensor_data
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 
 
@@ -67,8 +68,10 @@ class Localisation(Node):
         self.latest_detection = None
         self.latest_ground_truth = None
 
-        self.create_subscription(Float32, 'wr', self.wr_callback, 10)
-        self.create_subscription(Float32, 'wl', self.wl_callback, 10)
+        # Encoders del Puzzlebot fisico publican con QoS de sensor (BEST_EFFORT).
+        # Hay que igualarlo o no se reciben mensajes (incompatible QoS).
+        self.create_subscription(Float32, 'wr', self.wr_callback, qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wl', self.wl_callback, qos_profile_sensor_data)
         self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
         self.create_subscription(Odometry, '/ground_truth', self.ground_truth_callback, 10)
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
