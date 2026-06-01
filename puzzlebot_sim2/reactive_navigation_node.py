@@ -118,6 +118,18 @@ class ReactiveNavigation(Node):
             self.advance_goal()
             return
 
+        # Seguridad anti-colision (ultimo recurso): mira el FRENTE del robot
+        # (su heading, no la meta). Si hay pared muy cerca, no avanza; gira en
+        # el sitio hacia el lado mas abierto. Cubre el caso en que go_to_goal
+        # avanza en diagonal y rozaria una pared fuera del cono de la meta.
+        front = self.min_range_in_sector(0.0, np.deg2rad(20.0))
+        if front < 0.22:
+            left = self.min_range_in_sector(np.deg2rad(60.0), np.deg2rad(25.0))
+            right = self.min_range_in_sector(-np.deg2rad(60.0), np.deg2rad(25.0))
+            turn = 1.0 if left > right else -1.0
+            self.publish_velocity(0.0, 0.7 * turn)
+            return
+
         if self.state == 'go_to_goal':
             if self.path_blocked(ang_to_goal):
                 self.get_logger().info('Obstaculo -> follow_wall.',
@@ -231,8 +243,11 @@ class ReactiveNavigation(Node):
         return self.is_sector_clear(ang_to_goal, self.goal_heading_clear_angle)
 
     def is_sector_clear(self, center_angle, half_width):
+        return self.min_range_in_sector(center_angle, half_width) > self.wall_follow_safety
+
+    def min_range_in_sector(self, center_angle, half_width):
         if not self.lidar.ranges:
-            return False
+            return np.inf
         min_range = np.inf
         angle = self.lidar.angle_min
         for current_range in self.lidar.ranges:
@@ -242,7 +257,7 @@ class ReactiveNavigation(Node):
                 if abs(delta) <= half_width:
                     min_range = min(min_range, current_range)
             angle += self.lidar.angle_increment
-        return min_range > self.wall_follow_safety
+        return min_range
 
     def get_closest_object(self):
         # Robusto ante inf/0 del scan simulado (la version de clase asumia
