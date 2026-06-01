@@ -35,7 +35,7 @@ localisation:
 
 aruco_detector:
   ros__parameters:
-    marker_size_m: 0.096            # marcador impreso real ~9.6 cm
+    marker_size_m: 0.094            # marcador impreso real 9.4 cm
     image_topic: "/video_source/raw"
     aruco_dictionary: "DICT_ARUCO_ORIGINAL"   # "Original ArUco" del generador
     use_tf: false                  # pon true si tienes TF camara->base estable

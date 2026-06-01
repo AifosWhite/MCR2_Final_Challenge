@@ -43,7 +43,7 @@ class ArucoDetectorPhysical(Node):
         super().__init__('aruco_detector')
 
         # ---- Parametros de camara (PON LOS DE TU CALIBRACION REAL) --------
-        self.declare_parameter('marker_size_m', 0.096)          # marcador impreso real ~9.6 cm
+        self.declare_parameter('marker_size_m', 0.094)          # marcador impreso real 9.4 cm
         self.declare_parameter('image_topic', '/video_source/raw')
         self.declare_parameter('aruco_dictionary', 'DICT_ARUCO_ORIGINAL')
         self.declare_parameter('use_tf', False)
