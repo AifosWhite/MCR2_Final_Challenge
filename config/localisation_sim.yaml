@@ -1,0 +1,23 @@
+localisation:
+  ros__parameters:
+    x0: 0.0
+    y0: 0.0
+    theta0: 0.0
+    wheel_radius: 0.05
+    wheel_base: 0.19
+    odom_frame: "odom"
+    base_frame: "base_footprint"
+    kr: 0.002
+    kl: 0.002
+
+    # EKF con ArUco (SIMULACION): IDs 0-5 de los modelos puzzlebot_gazebo,
+    # en las posiciones PEGADAS a pared del maze_aruco.world.
+    # NOTA: 708 y 705 reusan modelos 0 y 1 -> sus detecciones se interpretan como
+    # ID 0/1 y corrigen hacia 75/706 (degradacion aceptada por IDs duplicados).
+    use_ekf: true
+    ekf_r_dist: 0.05
+    ekf_r_bearing: 0.05
+    # ID_real -> aruco_marker_N : 75->0, 706->1, 70->2, 701->3, 703->4, 702->5
+    marker_ids:   [0,      1,      2,      3,      4,      5    ]
+    marker_pos_x: [0.75,  -0.15,  -1.25,  -1.55,   0.95,   0.35 ]
+    marker_pos_y: [1.15,   0.55,   0.10,  -0.25,  -0.25,  -1.25 ]
