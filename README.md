@@ -1,79 +1,79 @@
-# MCR2 Final Challenge
+# MCR2 Final Challenge - Puzzlebot Sim 2
 
-ROS2 package for the Manchester Robotics final challenge using the Puzzlebot.
+Clean ROS2 package for the Manchester Robotics final challenge using the Puzzlebot.
 
-The project goal is to create a clean base for autonomous exploration in the Manchester Robotics simulator or real Puzzlebot setup. The package contains the Puzzlebot model, RViz visualisation, odometry/localisation nodes, ArUco localisation scaffolding, and Bug-based reactive navigation.
+The package is organized around a simple rule: first prove navigation, then add RViz, then add ArUco/EKF. Avoid launching every node at once while debugging.
 
-## Challenge scope
+## Main workflows
 
-The final challenge requires two main components:
+### 1. Clean simulation workflow
 
-1. **Localisation** using odometry and camera-based ArUco marker observations.
-2. **Unknown exploration / navigation** using a closed trajectory with at least four target points while avoiding obstacles.
+This is the recommended launch for development. It opens the maze and ArUco models in Gazebo, but the ROS algorithmic loop is lightweight and stable:
 
-This repository is organised so that the navigation, localisation, robot model, launch files and configuration files are easy for the team to edit independently.
+`simulator -> localisation -> sim_lidar / sim_aruco -> reactive_navigation -> cmd_vel`
 
-## Repository structure
-
-```text
-config/              Parameter files
-launch/              ROS2 launch files
-meshes/              Puzzlebot STL meshes
-puzzlebot_sim2/      Python ROS2 nodes
-resource/            ament package marker
-rviz/                RViz configuration
-urdf/                Puzzlebot URDF model with LiDAR link
-package.xml
-setup.py
-setup.cfg
-```
-
-The repository is intentionally flat. It can be cloned directly inside the `src` folder of a ROS2 workspace.
-
-## Main nodes
-
-### `final_bug_nav.py`
-
-Bug-based reactive navigation node. It subscribes to `/scan` and `/odom`, follows a waypoint sequence, avoids obstacles, and publishes velocity commands to `/cmd_vel`.
-
-The waypoint trajectory is configured in:
-
-```text
-config/final_bug_nav.yaml
-```
-
-### `localisation.py`
-
-Odometry-based localisation node using wheel angular velocities `/wr` and `/wl`. It publishes `/odom` with pose covariance. This is useful for local simulation and for showing covariance growth.
-
-### `aruco_ekf_localisation.py`
-
-Experimental EKF localisation node. It predicts the robot pose from wheel odometry and corrects the pose when ArUco marker transforms are available through TF.
-
-The marker map is configured in:
-
-```text
-config/aruco_ekf.yaml
-```
-
-### `simulator.py`
-
-Simple local differential-drive simulator for testing the robot without Gazebo. It does not create obstacles or a LaserScan topic.
-
-### `joint_states.py`
-
-Publishes wheel joint states and the base TF needed for RViz visualisation.
-
-## Build
-
-Clone the repository inside your workspace:
+Run without RViz:
 
 ```bash
-cd ~/manchester/src
-git clone https://github.com/AifosWhite/MCR2_Final_Challenge.git
+ros2 launch puzzlebot_sim2 final_simulation_clean.launch.py
 ```
 
-Build from the workspace root:
+Run with RViz:
+
+```bash
+ros2 launch puzzlebot_sim2 final_simulation_clean.launch.py use_rviz:=true
+```
+
+Run with camera-based ArUco detection instead of simulated ArUco detections:
+
+```bash
+ros2 launch puzzlebot_sim2 final_simulation_clean.launch.py use_camera_arucos:=true use_sim_aruco:=false use_rviz:=true
+```
+
+### 2. Minimal Gazebo-only navigation
+
+Use this only after the clean simulation works. This launch expects Gazebo to provide `/odom` and `/scan` through the bridge.
+
+```bash
+ros2 launch puzzlebot_sim2 gazebo_navigation_minimal.launch.py
+```
+
+With RViz:
+
+```bash
+ros2 launch puzzlebot_sim2 gazebo_navigation_minimal.launch.py use_rviz:=true
+```
+
+### 3. RViz only
+
+```bash
+ros2 launch puzzlebot_sim2 rviz_only_clean.launch.py
+```
+
+## Important nodes
+
+- `reactive_navigation_node.py`: simple Bug-style reactive navigation. Imported from the working Karifm logic because it is more robust for quick demos.
+- `final_bug_nav.py`: more complete Bug navigation implementation. Keep it for later tuning.
+- `localisation.py`: dead-reckoning odometry with optional ArUco correction and covariance publishing.
+- `sim_lidar_node.py`: lightweight LaserScan simulator using the maze walls.
+- `sim_aruco_node.py`: lightweight simulated ArUco detector that publishes `/aruco/detections`.
+- `visualization_node.py`: publishes covariance, camera field of view and path as `/localisation_markers`.
+- `aruco_detector.py`: camera-based ArUco detector. Keep optional because it is heavier.
+
+## Expected topics in the clean workflow
+
+```text
+/cmd_vel
+/odom
+/scan
+/aruco/detections
+/localisation_markers
+/joint_states
+/tf
+/tf_static
+```
+
+## Build
 
 ```bash
 cd ~/manchester
@@ -81,102 +81,24 @@ colcon build --packages-select puzzlebot_sim2 --symlink-install
 source install/setup.bash
 ```
 
-## Launch files
+## Debug order
 
-### Local visual test
+1. Run `final_simulation_clean.launch.py` without RViz.
+2. Confirm `/cmd_vel`, `/odom`, `/scan` exist.
+3. Add RViz with `use_rviz:=true`.
+4. Confirm `/localisation_markers` appears in RViz.
+5. Only then test camera-based ArUco with `use_camera_arucos:=true`.
 
-Use this when you only want to test the robot model, odometry, wheel joints and RViz without Gazebo.
+## Real robot note
 
-```bash
-ros2 launch puzzlebot_sim2 sim_base.launch.py
-```
-
-This launch does not publish `/scan`, so obstacle avoidance cannot be tested with it.
-
-### Navigation only
-
-Use this when the Manchester Gazebo environment is already running and provides `/scan`, `/odom`, and accepts `/cmd_vel`.
-
-```bash
-ros2 launch puzzlebot_sim2 navigation_only.launch.py
-```
-
-### Final challenge nodes
-
-Use this when the simulator or real robot is already providing the sensor topics and you want to start the challenge nodes and RViz.
-
-```bash
-ros2 launch puzzlebot_sim2 final_challenge.launch.py
-```
-
-### Real robot challenge
-
-Use this on the Puzzlebot Jetson to run the real robot challenge flow with camera, ArUco localisation, and Bug navigation.
-
-```bash
-ros2 launch puzzlebot_sim2 real_challenge.launch.py
-```
-
-## Required topics
-
-For navigation:
+For the real Puzzlebot, the expected topics are:
 
 ```text
-/scan       sensor_msgs/LaserScan
-/odom       nav_msgs/Odometry
-/cmd_vel    geometry_msgs/Twist
+/odom
+/scan
+/cmd_vel
+/image_raw
+/camera_info
 ```
 
-For odometry/localisation:
-
-```text
-/wr         std_msgs/Float32
-/wl         std_msgs/Float32
-/odom       nav_msgs/Odometry
-```
-
-For ArUco localisation:
-
-```text
-/video_source/raw              camera image
-/camera_info                   camera calibration
-/marker_publisher/markers      detected ArUco marker poses
-/tf                            marker transforms
-```
-
-## LiDAR
-
-The URDF contains a `lidar_link` and a Gazebo ray sensor block that remaps the sensor output to `/scan`. If the official Manchester Gazebo world already provides `/scan`, use that topic directly. If `/scan` is missing, obstacle avoidance cannot run correctly.
-
-Check available topics with:
-
-```bash
-ros2 topic list
-```
-
-## Branch workflow
-
-Use `main` for the shared stable version. Work on separate branches and merge only after testing.
-
-Suggested branches:
-
-```text
-sofiadev
-karim
-feature/lidar-gazebo
-feature/aruco-ekf
-feature/final-navigation
-feature/rviz-video
-```
-
-Typical workflow:
-
-```bash
-git checkout sofiadev
-git pull origin main
-# edit files
-git status
-git add .
-git commit -m "Describe the change"
-git push origin sofiadev
-```
+Use the real-robot launch only after micro-ROS, RPLidar and camera topics are verified.

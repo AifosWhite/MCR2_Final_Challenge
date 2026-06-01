@@ -1,0 +1,9 @@
+localisation_visualization:
+  ros__parameters:
+    base_frame: "base_footprint"
+    fov_deg: 60.0
+    vision_range: 2.5
+    covariance_sigma: 3.0
+    covariance_scale: 0.8
+    min_covariance_axis: 0.04
+    path_keep: 150

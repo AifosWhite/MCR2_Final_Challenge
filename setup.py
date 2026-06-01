@@ -40,6 +40,11 @@ setup(
     entry_points={
         'console_scripts': [
             'simulator = puzzlebot_sim2.simulator:main',
+            'visualization_node = puzzlebot_sim2.visualization_node:main',
+            'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
+            'sim_lidar_node = puzzlebot_sim2.sim_lidar_node:main',
+            'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
+            'localisation = puzzlebot_sim2.localisation:main',
             'joint_states = puzzlebot_sim2.joint_states:main',
             'final_bug_nav = puzzlebot_sim2.final_bug_nav:main',
             'aruco_ekf_localisation = puzzlebot_sim2.aruco_ekf_localisation:main',

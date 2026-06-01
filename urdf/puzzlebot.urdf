@@ -156,7 +156,7 @@
     <visual>
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
-        <box size="0.04 0.04 0.04"/>
+        <mesh filename="package://puzzlebot_sim2/meshes/Laser_Camera_Bracket.stl" scale="1 1 1"/>
       </geometry>
       <material name="camera_frame_grey">
         <color rgba="0.2 0.2 0.2 1.0"/>
@@ -258,7 +258,7 @@
   </gazebo>
 
   <!-- Gazebo Camera sensor. Publishes images for ArUco detection -->
-  <gazebo reference="base_link">
+  <gazebo reference="camera_link">
     <sensor name="camera_sensor" type="camera">
       <always_on>true</always_on>
       <update_rate>15</update_rate>
@@ -274,7 +274,7 @@
           <far>100</far>
         </clip>
       </camera>
-      <pose>0.10 0.0 0.10 0 0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <topic>/camera/image_raw</topic>
       <gz_frame_id>camera_link</gz_frame_id>
     </sensor>

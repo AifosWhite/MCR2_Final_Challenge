@@ -69,7 +69,7 @@ for mid in MARKER_IDS:
         </geometry>
         <material>
           <script>
-            <uri>model://puzzlebot_sim2/models/{name}/materials/scripts/aruco.material</uri>
+            <uri>model://{name}/materials/scripts/aruco.material</uri>
             <name>aruco/{mid}</name>
           </script>
         </material>

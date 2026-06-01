@@ -1,0 +1,11 @@
+reactive_navigation_node:
+  ros__parameters:
+    bug_algorithm: 2
+    # Conservative trajectory through the maze. Tune after checking the real track.
+    waypoints_x: [0.80, 1.20, 1.20, 0.80, 0.30, -0.30, -0.90, -1.25]
+    waypoints_y: [-0.70, -0.70, -1.15, -1.15, -0.70, -0.70, -0.70, -0.95]
+    goal_tolerance: 0.14
+    max_linear_speed: 0.08
+    max_angular_speed: 0.65
+    wall_distance: 0.24
+    front_clearance: 0.30

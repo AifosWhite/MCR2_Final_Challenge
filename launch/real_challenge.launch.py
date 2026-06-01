@@ -18,11 +18,25 @@ def generate_launch_description():
         output='screen',
         parameters=[
             {'resource': 'csi://0'},
-            {'width': 1280},
+            {'width': 1280}, 
             {'height': 720},
             {'codec': 'unknown'},
             {'loop': 0},
             {'latency': 2000},
+        ],
+    )
+
+    urdf_file = os.path.join(pkg_dir, 'urdf', 'puzzlebot.urdf')
+    with open(urdf_file, 'r') as infp:
+        robot_desc = infp.read()
+
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='screen',
+        parameters=[
+            {'robot_description': robot_desc},
         ],
     )
 
@@ -33,7 +47,7 @@ def generate_launch_description():
         output='screen',
         parameters=[
             {'camera_calibration_file': 'file:///home/puzzlebot/.ros/jetson_cam.yaml'},
-            {'frame_id': 'camera'},
+            {'frame_id': 'camera_link'},
         ],
     )
 
@@ -45,7 +59,7 @@ def generate_launch_description():
         parameters=[
             {'image_topic': '/video_source/raw'},
             {'marker_length': 0.165},
-            {'camera_frame': 'camera'},
+            {'camera_frame': 'camera_link'},
             {'parent_frame': 'base_link'},
         ],
     )
@@ -67,9 +81,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        robot_state_publisher,
         camera,
         camera_info,
-        aruco,
+        aruco_detector,
         aruco_ekf,
         final_bug_nav,
     ])
