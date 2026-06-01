@@ -308,23 +308,24 @@ está funcionando.
 
 # 6. Prueba 4 — Waypoint simple
 
-Antes de probar todo el laberinto, poner una ruta muy simple en:
+Objetivo: comprobar que el robot AVANZA hacia una meta simple en `+x` antes de
+arriesgar la ruta completa del laberinto. Si en esta prueba el robot "da
+vueltas" o no avanza, casi siempre es que el controlador NO recibe `/odom`, o
+que `/odom` no se mueve porque no llegan los encoders (no es un waypoint malo).
 
-```bash
-config/navigation_physical.yaml
-```
+## 6.1 Configurar la ruta
 
-Usar:
+Editar `config/navigation_physical.yaml` con una ruta mínima (solo avanzar en `+x`):
 
 ```yaml
-waypoints_x: [0.60, 1.00]
-waypoints_y: [-0.28, -0.28]
-loop: false
+bug_controller:
+  ros__parameters:
+    loop: false
+    waypoints_x: [0.60, 1.00]
+    waypoints_y: [-0.28, -0.28]
 ```
 
-Esto solo pide avanzar hacia `+x`.
-
-Recordatorio del nuevo sistema de ejes:
+Recordatorio del sistema de ejes (origen en la esquina inferior-izquierda):
 
 ```text
 x positivo: hacia arriba del mapa
@@ -332,36 +333,74 @@ y negativo: hacia la derecha del mapa
 theta0 = 0 apunta hacia +x
 ```
 
-Ejecutar navegación:
+## 6.2 Cómo correr
+
+Con la Jetson ya levantada (cámara/ArUco, micro-ROS Agent y LiDAR — pasos 1 a 3),
+en la PC:
 
 ```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true
+cd ~/MCR2_Final_Challenge
+source /opt/ros/humble/setup.bash
+unset RMW_IMPLEMENTATION
+export ROS_DOMAIN_ID=0
+export ROS_LOCALHOST_ONLY=0
+
+colcon build --packages-select puzzlebot_sim2
+source install/setup.bash
+
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true
 ```
 
-En otra terminal revisar:
+## 6.3 Verificar el pipeline ANTES de soltar el waypoint
+
+Antes de confiar en el waypoint, confirma que la pose le llega al controlador y
+que se mueve de verdad (esto descarta el síntoma de "dar vueltas"):
+
+```bash
+# 1) /odom publica a frecuencia estable (~50 Hz)
+ros2 topic hz /odom
+
+# 2) /odom CAMBIA al empujar el robot a mano (repite mientras lo mueves):
+ros2 topic echo --once /odom    # x, y deben cambiar al moverlo
+
+# 3) los encoders llegan (sin ellos no hay odom aunque lo demás esté bien)
+ros2 topic hz /VelocityEncR
+ros2 topic hz /VelocityEncL
+
+# 4) el controlador está vivo y con la ruta cargada
+ros2 param get /bug_controller waypoints_x
+```
+
+Si `/odom` NO cambia al empujar el robot, no sueltes el waypoint: arregla
+primero encoders/localización (ver sección 10, Debug rápido).
+
+## 6.4 Correr el waypoint y qué observar
+
+Con el pipeline confirmado, en otra terminal:
 
 ```bash
 ros2 topic echo /cmd_vel
 ros2 topic echo /goal_reached
-ros2 topic echo /odom
+ros2 topic echo /odom --field pose.pose.position
 ```
 
 Lo esperado:
 
 ```text
-El robot debe avanzar hacia arriba del mapa.
-odom debe aumentar principalmente en x.
-cmd_vel debe publicar velocidades.
-El robot no debe irse hacia el lado contrario.
+- /cmd_vel: linear.x positiva (avanza); angular.z pequeña (ajuste de rumbo).
+- /odom: x sube de ~0.0 hacia ~1.0; y se mantiene cerca de -0.28.
+- El robot avanza derecho hacia ARRIBA del mapa (+x); NO gira en el sitio.
+- /goal_reached marca cada meta; con loop:false se detiene tras (1.00, -0.28).
 ```
 
-Si el robot avanza al revés o de lado, revisar:
+Si el robot avanza pero hacia el lado equivocado (de lado o al revés), el
+pipeline está bien y es un problema de SIGNO. Revisar en este orden:
 
 ```text
-signo de theta
-signo del bearing
-orientación inicial física del robot
-sentido de encoders
+1. signo de theta (lo que reporta /odom vs la orientación real)
+2. signo del bearing del ArUco
+3. orientación física inicial del robot (debe mirar a +x)
+4. sentido de los encoders (¿izquierda/derecha intercambiados?)
 ```
 
 ---
