@@ -45,7 +45,7 @@ class ArucoDetectorPhysical(Node):
         # ---- Parametros de camara (PON LOS DE TU CALIBRACION REAL) --------
         self.declare_parameter('marker_size_m', 0.14)          # marcador impreso
         self.declare_parameter('image_topic', '/video_source/raw')
-        self.declare_parameter('aruco_dictionary', 'DICT_4X4_1000')
+        self.declare_parameter('aruco_dictionary', 'DICT_ARUCO_ORIGINAL')
         self.declare_parameter('use_tf', False)
         self.declare_parameter('camera_optical_frame', 'camera_link_optical')
         self.declare_parameter('base_frame', 'base_footprint')
@@ -71,7 +71,7 @@ class ArucoDetectorPhysical(Node):
         self.dist_coeffs = np.array(dc, dtype=np.float32).reshape((-1, 1))
 
         self.dictionary = cv2.aruco.getPredefinedDictionary(
-            getattr(cv2.aruco, dict_name, cv2.aruco.DICT_4X4_1000))
+            getattr(cv2.aruco, dict_name, cv2.aruco.DICT_ARUCO_ORIGINAL))
         if hasattr(cv2.aruco, 'ArucoDetector'):
             self.detector = cv2.aruco.ArucoDetector(
                 self.dictionary, cv2.aruco.DetectorParameters())
@@ -170,6 +170,13 @@ class ArucoDetectorPhysical(Node):
                 continue
 
             tx, ty, tz = float(tvec[0]), float(tvec[1]), float(tvec[2])
+
+            # Log de depuracion de tvec CRUDO (frame optico de la camara):
+            # z = distancia frontal. Si pones el marcador a 41 cm, z ~= 0.41.
+            self.get_logger().info(
+                f'tvec id={int(marker_id)}: x={tx:+.3f} y={ty:+.3f} z={tz:+.3f} m '
+                f'| dist_plano={math.hypot(tx, tz):.3f} m',
+                throttle_duration_sec=0.5)
 
             if self.use_tf:
                 obs = self._observe_via_tf(msg, tx, ty, tz)
