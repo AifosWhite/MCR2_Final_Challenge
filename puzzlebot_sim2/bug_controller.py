@@ -153,10 +153,11 @@ class BugController(Node):
 
         self.fw_dirs = {'left': 1, 'right': -1}
         self.fw_dir = 'right'
-        self.min_side = 0.0
-        self.min_front = 0.0
-        self.min_back_side = 0.0
-        self.min_back_side_out = 0.0
+        self.min_side = float('inf')
+        self.min_front = float('inf')
+        self.min_back_side = float('inf')
+        self.min_back_side_out = float('inf')
+        self.scan_ready = False
 
         self.controller_timer = self.create_timer(
             1.0 / self.update_rate, self.controller_callback)
@@ -207,6 +208,7 @@ class BugController(Node):
         self.robot_pose.theta = math.atan2(siny, cosy)
 
     def lidar_callback(self, msg):
+        self.scan_ready = True
         if self.using_real_robot:
             msg.angle_min = 0.0
             msg.angle_max = 2.0 * math.pi
@@ -260,6 +262,9 @@ class BugController(Node):
 
     # ---- Control ----------------------------------------------------------
     def controller_callback(self):
+        if not self.scan_ready:
+            return
+
         d = euclidean(self.robot_pose, self.robot_setpoint)
         twist = Twist()
 
