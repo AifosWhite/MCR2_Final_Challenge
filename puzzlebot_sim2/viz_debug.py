@@ -25,6 +25,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
+from rclpy.qos import qos_profile_sensor_data
 from std_msgs.msg import ColorRGBA, Float32MultiArray
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -64,7 +65,8 @@ class VizDebug(Node):
         self.last_obs = None            # (id, ox, oy) ultima lectura de aruco
         self.last_obs_count = 0         # ciclos que mantenemos la linea visible
 
-        self.create_subscription(Odometry, odom_topic, self.odom_cb, 10)
+        self.create_subscription(Odometry, odom_topic, self.odom_cb,
+                                 qos_profile_sensor_data)
         self.create_subscription(Float32MultiArray, det_topic, self.det_cb, 10)
         self.pub = self.create_publisher(MarkerArray, '/localisation_markers', 10)
         self.create_timer(0.1, self.publish_markers)

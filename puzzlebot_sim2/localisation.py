@@ -74,7 +74,11 @@ class Localisation(Node):
         self.create_subscription(Float32, 'wl', self.wl_callback, qos_profile_sensor_data)
         self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
         self.create_subscription(Odometry, '/ground_truth', self.ground_truth_callback, 10)
-        self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
+        # Publicar odom con QoS de sensor (BEST_EFFORT) para que coincida con
+        # la suscripcion del bug_controller y viz_debug. Con QoS RELIABLE (default)
+        # habia incompatibilidad y el bug_controller NUNCA recibia odom -> el
+        # robot se quedaba creyendo que estaba en (0,0,0) y daba vueltas.
+        self.odom_pub = self.create_publisher(Odometry, 'odom', qos_profile_sensor_data)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_broadcaster = StaticTransformBroadcaster(self)
 
