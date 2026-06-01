@@ -2,7 +2,6 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32
-from sensor_msgs.msg import JointState
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 import math
@@ -27,7 +26,6 @@ class JointStatesNode(Node):
         self.right_angle = 0.0
         self.left_angle = 0.0
 
-        self.joint_pub = self.create_publisher(JointState, '/joint_states', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
 
@@ -72,14 +70,8 @@ class JointStatesNode(Node):
         self.right_angle += self.wr * dt
         self.left_angle += self.wl * dt
 
-        js = JointState()
-        js.header.stamp = self.get_clock().now().to_msg()
-        js.name = ['wheel_right_joint', 'wheel_left_joint']
-        js.position = [self.right_angle, self.left_angle]
-        self.joint_pub.publish(js)
-
         t = TransformStamped()
-        t.header.stamp = js.header.stamp
+        t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = self.odom_frame
         t.child_frame_id = self.base_frame
         t.transform.translation.x = self.x

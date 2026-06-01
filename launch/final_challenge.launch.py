@@ -1,11 +1,11 @@
 import os
 
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, SetEnvironmentVariable, TimerAction
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import Command, LaunchConfiguration
+from launch.substitutions import Command, EnvironmentVariable, LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
@@ -18,6 +18,11 @@ def generate_launch_description():
     use_camera_arucos = LaunchConfiguration('use_camera_arucos')
     use_gazebo = LaunchConfiguration('use_gazebo')
     use_rviz = LaunchConfiguration('use_rviz')
+
+    gz_resource_path = SetEnvironmentVariable(
+        name='GZ_SIM_RESOURCE_PATH',
+        value=[pkg_dir, ':', EnvironmentVariable('GZ_SIM_RESOURCE_PATH', default_value='')],
+    )
 
     gazebo = ExecuteProcess(
         condition=IfCondition(use_gazebo),
@@ -48,8 +53,8 @@ def generate_launch_description():
                     '-world', 'default',
                     '-topic', 'robot_description',
                     '-name', 'puzzlebot',
-                    '-x', '0.80',
-                    '-y', '-1.05',
+                    '-x', '1.20',
+                    '-y', '-1.00',
                     '-z', '0.05',
                     '-Y', '1.57',
                 ],
@@ -76,14 +81,32 @@ def generate_launch_description():
         output='screen',
     )
 
+    scan_bridge = ExecuteProcess(
+        condition=IfCondition(use_gazebo),
+        cmd=[
+            'ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
+            '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+            '--ros-args', '-r', '/scan:=/scan_gz',
+        ],
+        output='screen',
+    )
+
+    scan_timestamp = Node(
+        condition=IfCondition(use_gazebo),
+        package='puzzlebot_sim2',
+        executable='scan_timestamp_node',
+        name='scan_timestamp_node',
+        output='screen',
+    )
+
     simulator = Node(
         package='puzzlebot_sim2',
         executable='simulator',
         name='puzzlebot_simulator',
         output='screen',
         parameters=[
-            {'x0': 0.80},
-            {'y0': -1.05},
+            {'x0': 1.20},
+            {'y0': -1.00},
             {'theta0': 1.57},
             {'wheel_radius': 0.05},
             {'wheel_base': 0.19},
@@ -99,6 +122,7 @@ def generate_launch_description():
     )
 
     joint_states = Node(
+        condition=UnlessCondition(use_gazebo),
         package='puzzlebot_sim2',
         executable='joint_states',
         name='joint_states',
@@ -106,6 +130,7 @@ def generate_launch_description():
     )
 
     sim_lidar = Node(
+        condition=UnlessCondition(use_gazebo),
         package='puzzlebot_sim2',
         executable='sim_lidar_node',
         name='sim_lidar_node',
@@ -113,17 +138,21 @@ def generate_launch_description():
         parameters=[{'world_file': world_file}],
     )
 
+    use_real_aruco_detector = PythonExpression([
+        "'", use_camera_arucos, "' == 'true' or '", use_gazebo, "' == 'true'"
+    ])
+
     camera_bridge = ExecuteProcess(
-        condition=IfCondition(use_camera_arucos),
+        condition=IfCondition(use_real_aruco_detector),
         cmd=[
             'ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
-            '/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
         ],
         output='screen',
     )
 
     aruco_detector = Node(
-        condition=IfCondition(use_camera_arucos),
+        condition=IfCondition(use_real_aruco_detector),
         package='puzzlebot_sim2',
         executable='aruco_detector',
         name='aruco_detector',
@@ -132,7 +161,7 @@ def generate_launch_description():
     )
 
     sim_aruco = Node(
-        condition=UnlessCondition(use_camera_arucos),
+        condition=IfCondition(PythonExpression(["'", use_camera_arucos, "' == 'false' and '", use_gazebo, "' == 'false'"])),
         package='puzzlebot_sim2',
         executable='sim_aruco_node',
         name='sim_aruco_node',
@@ -146,13 +175,17 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'bug_algorithm': 2,
-            'waypoints_x': [0.80, 1.20, 1.20, 0.80, 0.30, -0.30, -0.90, -1.25],
-            'waypoints_y': [-0.70, -0.70, -1.15, -1.15, -0.70, -0.70, -0.70, -0.95],
-            'goal_tolerance': 0.14,
-            'max_linear_speed': 0.08,
-            'max_angular_speed': 0.65,
-            'wall_distance': 0.24,
-            'front_clearance': 0.30,
+            'waypoints_x': [1.20, 1.20, 0.75, 0.30, -0.30, -0.90, -1.25],
+            'waypoints_y': [0.25, 0.55, 0.55, 0.55, 0.55, 0.55, 0.30],
+            'goal_tolerance': 0.16,
+            'max_linear_speed': 0.05,
+            'max_angular_speed': 0.45,
+            'wall_distance': 0.32,
+            'front_clearance': 0.42,
+            'side_clearance': 0.23,
+            'emergency_stop_distance': 0.20,
+            'wall_acquire_distance': 0.75,
+            'wall_leave_clearance': 0.60,
         }],
     )
 
@@ -176,11 +209,14 @@ def generate_launch_description():
         DeclareLaunchArgument('use_camera_arucos', default_value='false'),
         DeclareLaunchArgument('use_gazebo', default_value='false'),
         DeclareLaunchArgument('use_rviz', default_value='true'),
+        gz_resource_path,
         gazebo,
         robot_state_publisher,
         spawn_robot,
         cmd_vel_bridge,
         ground_truth_bridge,
+        scan_bridge,
+        scan_timestamp,
         simulator,
         localisation,
         joint_states,

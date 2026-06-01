@@ -19,6 +19,10 @@ class ReactiveNavigation(Node):
         self.declare_parameter('max_angular_speed', 1.2)
         self.declare_parameter('wall_distance', 0.35)
         self.declare_parameter('front_clearance', 0.45)
+        self.declare_parameter('side_clearance', 0.22)
+        self.declare_parameter('emergency_stop_distance', 0.20)
+        self.declare_parameter('wall_acquire_distance', 0.75)
+        self.declare_parameter('wall_leave_clearance', 0.60)
         self.declare_parameter('bug_algorithm', 2)
 
         wx = list(self.get_parameter('waypoints_x').value)
@@ -33,6 +37,10 @@ class ReactiveNavigation(Node):
         self.max_w = float(self.get_parameter('max_angular_speed').value)
         self.wall_distance = float(self.get_parameter('wall_distance').value)
         self.front_clearance = float(self.get_parameter('front_clearance').value)
+        self.side_clearance = float(self.get_parameter('side_clearance').value)
+        self.emergency_stop_distance = float(self.get_parameter('emergency_stop_distance').value)
+        self.wall_acquire_distance = float(self.get_parameter('wall_acquire_distance').value)
+        self.wall_leave_clearance = float(self.get_parameter('wall_leave_clearance').value)
         self.bug_algorithm = int(self.get_parameter('bug_algorithm').value)
 
         self.x = 0.0
@@ -40,6 +48,8 @@ class ReactiveNavigation(Node):
         self.theta = 0.0
         self.scan = None
         self.state = 'go_to_goal'
+        self.wall_side = 'right'
+        self.wall_lock_count = 0
         self.hit_point = None
         self.best_goal_distance = math.inf
 
@@ -81,16 +91,43 @@ class ReactiveNavigation(Node):
             self.next_goal()
             return
 
-        if self.state == 'go_to_goal':
-            if self.range_in_sector(0.0, math.radians(25.0)) < self.front_clearance:
-                self.state = 'follow_wall'
-                self.hit_point = (self.x, self.y)
-                self.best_goal_distance = dist
-            else:
-                self.go_to_goal(dist, angle_error)
-                return
+        if self.collision_guard():
+            return
 
-        self.follow_wall(dist, angle_error)
+        self.state = 'go_to_goal'
+        self.go_to_goal(dist, angle_error)
+
+    def collision_guard(self):
+        front = self.range_in_sector(0.0, math.radians(25.0))
+        front_left = self.range_in_sector(math.pi / 4.0, math.radians(20.0))
+        front_right = self.range_in_sector(-math.pi / 4.0, math.radians(20.0))
+        left = self.range_in_sector(math.pi / 2.0, math.radians(25.0))
+        right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
+
+        if front < self.front_clearance:
+            turn_left = right < left
+            turn_speed = 0.40 if front < self.emergency_stop_distance else 0.28
+            self.publish_cmd(0.0, turn_speed if turn_left else -turn_speed)
+            self.state = 'avoid_obstacle'
+            self.wall_side = 'right' if turn_left else 'left'
+            self.wall_lock_count = 10
+            return True
+
+        if front_right < self.side_clearance or right < self.side_clearance:
+            self.publish_cmd(0.012, 0.28)
+            self.state = 'avoid_obstacle'
+            self.wall_side = 'right'
+            self.wall_lock_count = 10
+            return True
+
+        if front_left < self.side_clearance or left < self.side_clearance:
+            self.publish_cmd(0.012, -0.28)
+            self.state = 'avoid_obstacle'
+            self.wall_side = 'left'
+            self.wall_lock_count = 10
+            return True
+
+        return False
 
     def goal_error(self):
         dx = self.goal_x - self.x
@@ -106,6 +143,8 @@ class ReactiveNavigation(Node):
         self.goal_index = (self.goal_index + 1) % len(self.waypoints)
         self.goal_x, self.goal_y = self.waypoints[self.goal_index]
         self.state = 'go_to_goal'
+        self.wall_side = 'right'
+        self.wall_lock_count = 0
         self.hit_point = None
         self.best_goal_distance = math.inf
         self.get_logger().info(
@@ -116,37 +155,78 @@ class ReactiveNavigation(Node):
     def go_to_goal(self, dist, angle_error):
         w = float(np.clip(2.0 * angle_error, -self.max_w, self.max_w))
         v = float(np.clip(0.8 * dist, 0.0, self.max_v))
-        if abs(angle_error) > 0.45:
-            v = 0.03
+        if abs(angle_error) > 0.35:
+            v = 0.0
+        front = self.range_in_sector(0.0, math.radians(25.0))
+        if front < self.front_clearance * 1.5:
+            v = min(v, 0.03)
         self.publish_cmd(v, w)
 
     def follow_wall(self, dist, angle_error):
+        if self.wall_lock_count > 0:
+            self.wall_lock_count -= 1
+
         front = self.range_in_sector(0.0, math.radians(20.0))
+        left = self.range_in_sector(math.pi / 2.0, math.radians(20.0))
         right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
+        front_left = self.range_in_sector(math.pi / 4.0, math.radians(20.0))
         front_right = self.range_in_sector(-math.pi / 4.0, math.radians(20.0))
         self.best_goal_distance = min(self.best_goal_distance, dist)
 
         if self.can_leave_wall(dist, angle_error):
             self.state = 'go_to_goal'
+            self.wall_lock_count = 0
             self.go_to_goal(dist, angle_error)
             return
 
-        if front < self.front_clearance or front_right < self.wall_distance * 0.75:
-            v = 0.03
-            w = 0.85
+        diagonal = front_left if self.wall_side == 'left' else front_right
+
+        if front < self.front_clearance:
+            v = 0.0
+            w = -0.38 if self.wall_side == 'left' else 0.38
+        elif diagonal < self.wall_distance * 0.75:
+            v = 0.015
+            w = -0.42 if self.wall_side == 'left' else 0.42
         else:
-            error = self.wall_distance - right
-            v = self.max_v * 0.75
-            w = float(np.clip(1.8 * error, -self.max_w, self.max_w))
+            if self.wall_side == 'left':
+                side_range = left
+                diagonal_range = front_left
+                turn_sign = -1.0
+            else:
+                side_range = right
+                diagonal_range = front_right
+                turn_sign = 1.0
+
+            if not math.isfinite(side_range) or side_range > self.wall_acquire_distance:
+                v = 0.025
+                w = -0.35 * turn_sign
+            elif diagonal_range < self.side_clearance:
+                v = 0.02
+                w = 0.55 * turn_sign
+            else:
+                error = self.wall_distance - side_range
+                v = self.max_v * 0.55
+                w = float(np.clip(turn_sign * 1.2 * error, -0.45, 0.45))
         self.publish_cmd(v, w)
 
+    def choose_wall_side(self):
+        left = self.range_in_sector(math.pi / 2.0, math.radians(25.0))
+        right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
+        if left < right and left < self.wall_acquire_distance:
+            return 'left'
+        return 'right'
+
     def can_leave_wall(self, dist, angle_error):
+        if self.wall_lock_count > 0:
+            return False
         if abs(angle_error) > math.radians(35.0):
             return False
-        if self.range_in_sector(angle_error, math.radians(20.0)) < self.front_clearance:
+        if self.range_in_sector(0.0, math.radians(25.0)) < self.wall_leave_clearance:
+            return False
+        if self.range_in_sector(angle_error, math.radians(20.0)) < self.wall_leave_clearance:
             return False
         if self.bug_algorithm == 2:
-            return dist < self.best_goal_distance - 0.03
+            return dist < self.best_goal_distance - 0.08
         return True
 
     def range_in_sector(self, center, half_width):

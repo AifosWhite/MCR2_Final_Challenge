@@ -10,7 +10,8 @@ import cv2
 class ArucoDetector(Node):
     def __init__(self):
         super().__init__('aruco_detector')
-        self.marker_size = 0.14
+        self.declare_parameter('marker_size_m', 0.20)
+        self.marker_size = float(self.get_parameter('marker_size_m').value)
         fx = 554.0
         fy = 554.0
         cx = 320.0
@@ -23,7 +24,15 @@ class ArucoDetector(Node):
         self.camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32)
         self.dist_coeffs = np.array([k1, k2, p1, p2, 0.0], dtype=np.float32)
         self.dictionary = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, dict_name, cv2.aruco.DICT_4X4_1000))
-        self.detector = cv2.aruco.ArucoDetector(self.dictionary, cv2.aruco.DetectorParameters())
+        if hasattr(cv2.aruco, 'ArucoDetector'):
+            self.detector = cv2.aruco.ArucoDetector(self.dictionary, cv2.aruco.DetectorParameters())
+            self.detector_parameters = None
+        else:
+            self.detector = None
+            if hasattr(cv2.aruco, 'DetectorParameters_create'):
+                self.detector_parameters = cv2.aruco.DetectorParameters_create()
+            else:
+                self.detector_parameters = cv2.aruco.DetectorParameters()
         self.publisher = self.create_publisher(Float32MultiArray, '/aruco/detections', 10)
         qos = rclpy.qos.QoSProfile(depth=1, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT)
         self.subscription = self.create_subscription(Image, '/image_raw', self.image_callback, qos)
@@ -47,7 +56,14 @@ class ArucoDetector(Node):
             img = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape((msg.height, msg.width, 3))
         else:
             return
-        corners, ids, _ = self.detector.detectMarkers(img)
+        if self.detector is not None:
+            corners, ids, _ = self.detector.detectMarkers(img)
+        else:
+            corners, ids, _ = cv2.aruco.detectMarkers(
+                img,
+                self.dictionary,
+                parameters=self.detector_parameters,
+            )
         if ids is None or len(ids) == 0:
             return
         markers = []

@@ -1,14 +1,12 @@
 localisation:
   ros__parameters:
-    x0: 0.0
-    y0: 0.0
-    theta0: 0.0
-    initial_x: 0.0
-    initial_y: 0.0
-    initial_theta: 0.0
-    update_rate: 50.0
+    x0: 1.20
+    y0: -1.00
+    theta0: 1.57
+    initial_x: 1.20
+    initial_y: -1.00
+    initial_theta: 1.57
     publish_map_odom_tf: true
-    world_frame: "map"
     update_rate: 50.0
     wheel_radius: 0.05
     wheel_base: 0.19
@@ -22,16 +20,6 @@ localisation:
     ekf_r_bearing: 0.05
     marker_size_m: 0.18
     aruco_dictionary: "DICT_4X4_1000"
-    # Physical ArUcos from https://chev.me/arucogen/:
-    # models:       705,    706,    70,     703,    708,    75,     702
-    marker_ids:   [705,    706,    70,     703,    708,    75,     702]
-    marker_pos_x: [-0.500, -0.500, -1.300,  0.400, -0.350,  0.800,  0.300]
-    marker_pos_y: [-0.880,  0.820,  0.200, -0.280, -0.250,  1.120, -1.150]
-    # EKF wall markers for maze.world:
-    #   M0: left wall, upper corridor   (-1.3,  0.9)
-    #   M1: right wall, upper corridor  ( 1.0,  0.9)
-    #   M2: right wall, lower corridor  ( 1.0, -0.9)
-    #   M3: left wall, lower corridor   (-1.3, -0.9)
-    ekf_wall_marker_ids:    [0,     1,    2,     3   ]
-    ekf_wall_marker_pos_x:  [-1.3,  1.0,  1.0,  -1.3]
-    ekf_wall_marker_pos_y:  [ 0.9,  0.9, -0.9,  -0.9]
+    marker_ids:   [70,     706,    75,     701,    703,    705,    708,    702]
+    marker_pos_x: [-1.634, -0.972,  0.792,  1.634,  0.945, -0.109, -0.324,  0.303]
+    marker_pos_y: [ 0.224,  0.854,  1.621,  0.230, -0.354, -0.971, -0.370, -1.277]
