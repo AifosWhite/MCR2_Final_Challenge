@@ -1,20 +1,23 @@
 # Config de localizacion para el Puzzlebot FISICO.
 # Aplica a los nodos: localisation (EKF) y aruco_detector (detector fisico).
+#
+# SISTEMA DE COORDENADAS: origen (0,0) = esquina inferior-izquierda (punto rojo).
+# +x a la derecha, +y hacia arriba. Todo en METROS, todo POSITIVO (0..3.05 / 0..3.075).
 
 localisation:
   ros__parameters:
-    # Pose inicial: DEBE coincidir con donde colocas el robot en el maze real.
-    x0: 1.20
-    y0: -1.00
-    theta0: 1.57
+    # Pose inicial: robot abajo-izquierda mirando hacia +y (camara hacia arriba).
+    # AJUSTA x0,y0 a los cm reales del CENTRO del robot (a pared izq y al piso).
+    x0: 0.30
+    y0: 0.45
+    theta0: 1.5708
     update_rate: 50.0
     wheel_radius: 0.05
     wheel_base: 0.19
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
-    # Ruido de encoders (propagacion de covarianza por rueda). Conserva tu
-    # esquema basado en encoders; ajusta si la incertidumbre crece muy rapido.
+    # Ruido de encoders (propagacion de covarianza por rueda).
     kr: 0.002
     kl: 0.002
     use_ekf: true
@@ -22,17 +25,17 @@ localisation:
     ekf_r_dist: 0.05
     ekf_r_bearing: 0.05
     # --- Posiciones FISICAS de los marcadores (medidas con cinta) ---
-    # Origen-centered. Verifica cada una con cinta antes de la corrida real:
-    # el EKF es sensible a errores de centimetros.
+    # Origen (0,0) = esquina inferior-izquierda. x = a pared izquierda,
+    # y = al piso (al borde inferior), en METROS, al CENTRO del marcador.
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708]
-    marker_pos_x: [-1.25, 0.75, -1.55,  0.35,  0.95, -0.10, -0.15,  0.05]
-    marker_pos_y: [ 0.10, 1.15, -0.25, -1.25, -0.25, -0.45,  0.55, -0.15]
+    marker_pos_x: [0.30,  2.40,  0.00,  1.83,  2.07,  1.20,  1.255, 1.21]
+    marker_pos_y: [1.85,  2.75,  1.30,  0.27,  1.24,  0.89,  2.455, 1.185]
 
 aruco_detector:
   ros__parameters:
     marker_size_m: 0.14            # marcador IMPRESO (no el board de 0.18)
     image_topic: "/video_source/raw"
-    aruco_dictionary: "DICT_4X4_1000"
+    aruco_dictionary: "DICT_ARUCO_ORIGINAL"   # "Original ArUco" del generador
     use_tf: false                  # pon true si tienes TF camara->base estable
     camera_optical_frame: "camera_link_optical"
     base_frame: "base_footprint"
@@ -47,11 +50,11 @@ aruco_detector:
     camera_distortion: [-0.379059, 0.152931, 0.005085, 0.000654, 0.000000]
 
 # Visualizacion de depuracion en RViz (nodo viz_debug). Mismo mapa de
-# marcadores que el EKF, para dibujar donde estan vs donde el robot los lee.
+# marcadores que el EKF (consistente con la seccion localisation de arriba).
 viz_debug:
   ros__parameters:
     frame_id: "odom"
     err_log_threshold: 0.15        # solo loguea si el error de localiz. supera esto (m)
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708]
-    marker_pos_x: [-1.25, 0.75, -1.55,  0.35,  0.95, -0.10, -0.15,  0.05]
-    marker_pos_y: [ 0.10, 1.15, -0.25, -1.25, -0.25, -0.45,  0.55, -0.15]
+    marker_pos_x: [0.30,  2.40,  0.00,  1.83,  2.07,  1.20,  1.255, 1.21]
+    marker_pos_y: [1.85,  2.75,  1.30,  0.27,  1.24,  0.89,  2.455, 1.185]
