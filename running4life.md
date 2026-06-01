@@ -37,6 +37,9 @@ export ROS_LOCALHOST_ONLY=0
 ```bash
 ssh puzzlebot@10.201.233.217
 
+```
+
+```bash
 cd ~/ros2_ws
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
@@ -66,6 +69,9 @@ ros2 topic list
 ```bash
 ssh puzzlebot@10.201.233.217
 
+```
+
+```bash
 cd ~/ros2_ws
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
@@ -97,6 +103,9 @@ ros2 topic hz /VelocityEncL
 ```bash
 ssh puzzlebot@10.201.233.217
 
+```
+
+```bash
 cd ~/ros2_ws
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
