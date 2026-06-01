@@ -47,6 +47,7 @@ setup(
             'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',
             'joint_states = puzzlebot_sim2.joint_states:main',
             'scan_timestamp_node = puzzlebot_sim2.scan_timestamp_node:main',
+            'jetson_aruco_adapter = puzzlebot_sim2.jetson_aruco_adapter:main',
         ],
     },
 )

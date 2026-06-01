@@ -8,6 +8,7 @@ Panels:
         - /Localisation markers1
         - /Sim LiDAR walls1
         - /LiDAR scan1
+        - /ArUco Marker Result1
       Splitter Ratio: 0.5
   - Class: rviz_common/Views
     Name: Views
@@ -141,6 +142,21 @@ Visualization Manager:
         Value: /scan
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: ArUco Marker Result
+      Normalize Range: true
+      Queue Size: 10
+      Topic:
+        Depth: 10
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /aruco/result
       Value: true
   Enabled: true
   Global Options:
