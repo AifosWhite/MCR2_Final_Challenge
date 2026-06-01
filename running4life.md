@@ -164,6 +164,27 @@ source install/setup.bash
 ros2 pkg prefix puzzlebot_sim2
 ```
 
+## Comandos rápidos para correr el proyecto
+
+Usa estos pasos desde la raíz del workspace para compilar y lanzar la pila física:
+
+```bash
+cd ~/MCR2_Final_Challenge
+source /opt/ros/humble/setup.bash
+unset RMW_IMPLEMENTATION
+export ROS_DOMAIN_ID=0
+export ROS_LOCALHOST_ONLY=0
+
+colcon build --packages-select puzzlebot_sim2
+source install/setup.bash
+
+# Lanzar solo localización (sin navegación)
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=false use_rviz:=true --ros-args --log-level info
+
+# Lanzar con navegación y RViz
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true --ros-args --log-level info
+```
+
 ---
 
 # 3. Prueba 1 — Validar solo localización
