@@ -77,7 +77,17 @@ def generate_launch_description():
         parameters=[nav_params],
     )
 
-    # Visualizacion (opcional).
+    # Visualizacion de depuracion: markers de mapa/pose/lectura de ArUco + logs.
+    viz_debug = Node(
+        condition=IfCondition(use_rviz),
+        package='puzzlebot_sim2',
+        executable='viz_debug',
+        name='viz_debug',
+        output='screen',
+        parameters=[loc_params],
+    )
+
+    # RViz (opcional).
     rviz = Node(
         condition=IfCondition(use_rviz),
         package='rviz2',
@@ -93,5 +103,6 @@ def generate_launch_description():
         localisation,
         aruco_detector,
         bug_controller,
+        viz_debug,
         rviz,
     ])

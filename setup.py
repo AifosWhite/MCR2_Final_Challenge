@@ -38,6 +38,7 @@ setup(
             'localisation = puzzlebot_sim2.localisation:main',
             'bug_controller = puzzlebot_sim2.bug_controller:main',
             'aruco_detector_physical = puzzlebot_sim2.aruco_detector_physical:main',
+            'viz_debug = puzzlebot_sim2.viz_debug:main',
         ],
     },
 )

@@ -45,3 +45,12 @@ aruco_detector:
                     0.0,       261.19619, 68.40949,
                     0.0,       0.0,       1.0]
     camera_distortion: [-0.379059, 0.152931, 0.005085, 0.000654, 0.000000]
+
+# Visualizacion de depuracion en RViz (nodo viz_debug). Mismo mapa de
+# marcadores que el EKF, para dibujar donde estan vs donde el robot los lee.
+viz_debug:
+  ros__parameters:
+    frame_id: "odom"
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708]
+    marker_pos_x: [-1.25, 0.75, -1.55,  0.35,  0.95, -0.10, -0.15,  0.05]
+    marker_pos_y: [ 0.10, 1.15, -0.25, -1.25, -0.25, -0.45,  0.55, -0.15]

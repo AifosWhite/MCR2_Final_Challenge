@@ -54,29 +54,15 @@ Visualization Manager:
       Visual Enabled: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
-      Name: Localisation markers
+      Name: Debug markers (mapa/pose/aruco)
       Namespaces:
-        aruco_vision: true
-        localisation_covariance: true
-        localisation_path: true
+        {}
       Topic:
         Depth: 10
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /localisation_markers
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: Sim LiDAR walls
-      Namespaces:
-        sim_lidar_walls: true
-      Topic:
-        Depth: 10
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /sim_lidar_walls
       Value: true
     - Angle Tolerance: 0.1
       Class: rviz_default_plugins/Odometry
