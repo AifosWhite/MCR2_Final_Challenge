@@ -43,12 +43,15 @@ class ArucoDetectorPhysical(Node):
         super().__init__('aruco_detector')
 
         # ---- Parametros de camara (PON LOS DE TU CALIBRACION REAL) --------
-        self.declare_parameter('marker_size_m', 0.14)          # marcador impreso
+        self.declare_parameter('marker_size_m', 0.096)          # marcador impreso real ~9.6 cm
         self.declare_parameter('image_topic', '/video_source/raw')
         self.declare_parameter('aruco_dictionary', 'DICT_ARUCO_ORIGINAL')
         self.declare_parameter('use_tf', False)
         self.declare_parameter('camera_optical_frame', 'camera_link_optical')
         self.declare_parameter('base_frame', 'base_footprint')
+        self.declare_parameter('use_tvec_z_correction', False)
+        self.declare_parameter('tvec_z_scale', 0.676)
+        self.declare_parameter('tvec_z_bias', 0.00795)
         # fx, fy, cx, cy  -> matriz intrinseca. Estos son PLACEHOLDERS.
         self.declare_parameter('camera_matrix',
                                [191.26581, 0.0, 169.60164,
@@ -64,6 +67,9 @@ class ArucoDetectorPhysical(Node):
         self.camera_optical_frame = str(
             self.get_parameter('camera_optical_frame').value)
         self.base_frame = str(self.get_parameter('base_frame').value)
+        self.use_tvec_z_correction = bool(self.get_parameter('use_tvec_z_correction').value)
+        self.tvec_z_scale = float(self.get_parameter('tvec_z_scale').value)
+        self.tvec_z_bias = float(self.get_parameter('tvec_z_bias').value)
 
         cm = list(self.get_parameter('camera_matrix').value)
         self.camera_matrix = np.array(cm, dtype=np.float32).reshape((3, 3))
@@ -177,6 +183,13 @@ class ArucoDetectorPhysical(Node):
                 f'tvec id={int(marker_id)}: x={tx:+.3f} y={ty:+.3f} z={tz:+.3f} m '
                 f'| dist_plano={math.hypot(tx, tz):.3f} m',
                 throttle_duration_sec=0.5)
+
+            if self.use_tvec_z_correction:
+                raw_tz = tz
+                tz = self.tvec_z_scale * tz + self.tvec_z_bias
+                self.get_logger().debug(
+                    f'tvec z corregido: {raw_tz:+.3f} -> {tz:+.3f} m',
+                    throttle_duration_sec=1.0)
 
             if self.use_tf:
                 obs = self._observe_via_tf(msg, tx, ty, tz)
