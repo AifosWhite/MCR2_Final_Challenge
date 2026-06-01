@@ -123,8 +123,9 @@ class ReactiveNavigation(Node):
         else:
             self.stuck_cycles += 1
 
-        # ~4 s casi sin moverse -> gira en el sitio hacia el lado mas abierto.
-        if self.stuck_cycles > 40:
+        # ~7 s casi sin moverse -> recovery. Margen amplio para no interrumpir
+        # un wall-follow lento que de hecho esta rodeando el obstaculo (Bug2).
+        if self.stuck_cycles > 70:
             self.stuck_cycles = 0
             left = self.range_in_sector(math.pi / 2.0, math.radians(40.0))
             right = self.range_in_sector(-math.pi / 2.0, math.radians(40.0))

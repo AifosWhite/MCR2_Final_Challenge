@@ -191,12 +191,12 @@ def generate_launch_description():
             'goal_tolerance': 0.16,
             'max_linear_speed': 0.05,
             'max_angular_speed': 0.45,
-            'wall_distance': 0.32,
-            'front_clearance': 0.42,
-            'side_clearance': 0.23,
+            'wall_distance': 0.28,
+            'front_clearance': 0.32,
+            'side_clearance': 0.20,
             'emergency_stop_distance': 0.22,
             'wall_acquire_distance': 0.75,
-            'wall_leave_clearance': 0.60,
+            'wall_leave_clearance': 0.45,
         }],
     )
 
