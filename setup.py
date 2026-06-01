@@ -23,8 +23,6 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
         (os.path.join('share', package_name, 'config'), glob(os.path.join('config', '*.[yma]*'))),
         (os.path.join('share', package_name, 'rviz'), glob(os.path.join('rviz', '*.rviz'))),
-        (os.path.join('share', package_name, 'worlds'), glob(os.path.join('worlds', '*.world'))),
-        *package_files('worlds/aruco_textures'),
         *package_files('meshes'),
         *package_files('urdf'),
     ],
@@ -37,18 +35,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'simulator = puzzlebot_sim2.simulator:main',
-            'sim_lidar_node = puzzlebot_sim2.sim_lidar_node:main',
-            'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
             'localisation = puzzlebot_sim2.localisation:main',
-            'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
             'bug_controller = puzzlebot_sim2.bug_controller:main',
             'aruco_detector_physical = puzzlebot_sim2.aruco_detector_physical:main',
-            'visualization_node = puzzlebot_sim2.visualization_node:main',
-            'aruco_detector = puzzlebot_sim2.aruco_detector:main',
-            'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',
-            'joint_states = puzzlebot_sim2.joint_states:main',
-            'scan_timestamp_node = puzzlebot_sim2.scan_timestamp_node:main',
         ],
     },
 )
