@@ -32,6 +32,7 @@ def generate_launch_description():
     rviz_config = os.path.join(pkg, 'rviz', 'puzzlebot_desc.rviz')
 
     use_rviz = LaunchConfiguration('use_rviz')
+    use_nav = LaunchConfiguration('nav')
     robot_desc = Command(['xacro ', xacro_file])
 
     # TF de los links del robot (en fisico: use_sim_time False).
@@ -69,7 +70,9 @@ def generate_launch_description():
     )
 
     # Control Bug2 con seguimiento de pared (recorre la lista de waypoints).
+    # Se puede apagar con nav:=false para probar SOLO localizacion.
     bug_controller = Node(
+        condition=IfCondition(use_nav),
         package='puzzlebot_sim2',
         executable='bug_controller',
         name='bug_controller',
@@ -99,6 +102,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('use_rviz', default_value='true'),
+        DeclareLaunchArgument('nav', default_value='true'),
         robot_state_publisher,
         localisation,
         aruco_detector,
