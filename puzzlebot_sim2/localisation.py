@@ -33,9 +33,9 @@ class Localisation(Node):
         self.declare_parameter('ekf_r_dist', 0.05)
         self.declare_parameter('ekf_r_bearing', 0.05)
         self.declare_parameter('use_ground_truth_pose', False)
-        self.declare_parameter('marker_ids', [705, 706, 70, 703, 708, 75, 702])
-        self.declare_parameter('marker_pos_x', [-0.500, -0.500, -1.300, 0.400, -0.350, 0.800, 0.300])
-        self.declare_parameter('marker_pos_y', [-0.880, 0.820, 0.200, -0.280, -0.250, 1.120, -1.150])
+        self.declare_parameter('marker_ids', [70, 75, 701, 702, 703, 705, 706, 708])
+        self.declare_parameter('marker_pos_x', [1.85, 2.75, 2.82, 0.27, 1.24, 0.89, 2.455, 1.185])
+        self.declare_parameter('marker_pos_y', [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21])
 
         self.r = float(self.get_parameter('wheel_radius').value)
         self.L = float(self.get_parameter('wheel_base').value)
@@ -179,8 +179,7 @@ class Localisation(Node):
         self.sigma = (np.eye(3) - k @ g) @ self.sigma
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
-        # Correccion ArUco aplicada. En consola lo cubre viz_debug (compacto);
-        # aqui queda en nivel debug para no duplicar (activalo con --log-level debug).
+        # Correccion ArUco aplicada
         self.get_logger().debug(
             f'ArUco {marker_id}: aruco=({mx:.2f}, {my:.2f}) '
             f'pose_est=({self.x:.2f}, {self.y:.2f}, {math.degrees(self.theta):.0f} deg) '
