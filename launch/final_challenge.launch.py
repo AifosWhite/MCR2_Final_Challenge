@@ -168,6 +168,12 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Bug navigation: lazo cerrado de waypoints con fallback de seguimiento de
+    # pared. Waypoints centrados en el origen (frame EKF/odom) y validados
+    # wall-safe contra maze.world (peor holgura de pasillo ~0.16 m para un robot
+    # de ~0.13 m de radio). Forman un lazo por las cuatro esquinas, empezando y
+    # terminando en el spawn (1.20, -1.00). NO los reemplaces por una marcha
+    # recta por y~=0.55: ese camino cruza paredes interiores.
     reactive_navigation = Node(
         package='puzzlebot_sim2',
         executable='reactive_navigation_node',
@@ -175,15 +181,20 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'bug_algorithm': 2,
-            'waypoints_x': [1.20, 1.20, 0.75, 0.30, -0.30, -0.90, -1.25],
-            'waypoints_y': [0.25, 0.55, 0.55, 0.55, 0.55, 0.55, 0.30],
+            'waypoints_x': [1.20, 1.00, 0.80, 0.05, 0.10, 1.30, 1.00, 0.85,
+                            0.25, 0.65, 0.50, 0.35, 0.15, -0.25, -0.45, -1.30,
+                            -0.40, -0.20, 0.00, 0.10, 0.90, 1.05, 1.20],
+            'waypoints_y': [-1.00, -1.30, -1.10, -0.40, -0.20, 1.00, 0.70,
+                            0.75, 1.30, 0.90, 0.20, 0.05, 0.15, 0.55, 0.50,
+                            -0.30, 0.55, 0.50, -0.05, -0.45, -1.20, -1.15,
+                            -1.00],
             'goal_tolerance': 0.16,
             'max_linear_speed': 0.05,
             'max_angular_speed': 0.45,
             'wall_distance': 0.32,
             'front_clearance': 0.42,
             'side_clearance': 0.23,
-            'emergency_stop_distance': 0.20,
+            'emergency_stop_distance': 0.22,
             'wall_acquire_distance': 0.75,
             'wall_leave_clearance': 0.60,
         }],

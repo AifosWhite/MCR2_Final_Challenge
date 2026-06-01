@@ -38,6 +38,7 @@ class ArucoDetector(Node):
         self.subscription = self.create_subscription(Image, '/image_raw', self.image_callback, qos)
         self.new_image = False
         self.latest_msg = None
+        self._logged_encoding = False
         self.create_timer(0.05, self.timer_callback)
 
     def image_callback(self, msg):
@@ -49,23 +50,34 @@ class ArucoDetector(Node):
             return
         self.new_image = False
         msg = self.latest_msg
+        if not self._logged_encoding:
+            self._logged_encoding = True
+            self.get_logger().info(
+                f'Primera imagen: encoding="{msg.encoding}", '
+                f'{msg.width}x{msg.height}.')
         if msg.encoding == 'rgb8':
             img = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape((msg.height, msg.width, 3))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         elif msg.encoding == 'bgr8':
             img = np.frombuffer(bytes(msg.data), dtype=np.uint8).reshape((msg.height, msg.width, 3))
         else:
+            self.get_logger().warn(
+                f'Encoding no soportado: "{msg.encoding}" (se esperaba rgb8/bgr8).',
+                throttle_duration_sec=5.0)
             return
         if self.detector is not None:
-            corners, ids, _ = self.detector.detectMarkers(img)
+            corners, ids, rejected = self.detector.detectMarkers(img)
         else:
-            corners, ids, _ = cv2.aruco.detectMarkers(
+            corners, ids, rejected = cv2.aruco.detectMarkers(
                 img,
                 self.dictionary,
                 parameters=self.detector_parameters,
             )
         if ids is None or len(ids) == 0:
             return
+        self.get_logger().info(
+            f'Detectados IDs: {ids.flatten().tolist()}.',
+            throttle_duration_sec=1.0)
         markers = []
         for i, marker_id in enumerate(ids.flatten()):
             objp = np.array([

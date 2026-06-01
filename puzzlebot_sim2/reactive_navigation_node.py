@@ -53,6 +53,13 @@ class ReactiveNavigation(Node):
         self.hit_point = None
         self.best_goal_distance = math.inf
 
+        # Deteccion de atasco / recovery (el loop corre a 10 Hz).
+        self.stuck_ref_x = 0.0
+        self.stuck_ref_y = 0.0
+        self.stuck_cycles = 0
+        self.recovery_cycles = 0
+        self.recovery_dir = 1.0
+
         self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
         self.create_subscription(LaserScan, 'scan', self.scan_callback, 10)
         self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 10)
@@ -86,31 +93,82 @@ class ReactiveNavigation(Node):
             self.publish_cmd(0.0, 0.0)
             return
 
+        # --- Recovery de atasco -------------------------------------------
+        # Giro en LAZO CERRADO: rota hacia el lado abierto y SALE apenas el
+        # frente queda despejado (con histeresis), en vez de girar un numero
+        # fijo de ciclos -> evita el overshoot que hace ver la pared de enfrente.
+        if self.recovery_cycles > 0:
+            self.recovery_cycles -= 1
+            front = self.range_in_sector(0.0, math.radians(25.0))
+            rear = self.range_in_sector(math.pi, math.radians(30.0))
+            # Sale apenas hay ~0.40 m libres al frente (umbral ALCANZABLE en el
+            # laberinto; 0.57 era imposible y lo dejaba girando sin escapar).
+            if front > 0.40:
+                self.recovery_cycles = 0
+                self.reset_bug_state()
+                self.stuck_ref_x, self.stuck_ref_y = self.x, self.y
+                self.stuck_cycles = 0
+                self.publish_cmd(0.04, 0.0)   # arranca derecho
+                return
+            # Retrocede (si hay hueco atras) mientras gira hacia el lado abierto:
+            # crear espacio es lo que de verdad lo saca de una cuña/dead-end.
+            back = -0.05 if rear > 0.25 else 0.0
+            self.publish_cmd(back, 0.5 * self.recovery_dir)
+            return
+
+        # Mide progreso real (pose): si avanzamos algo, reinicia el contador.
+        if math.hypot(self.x - self.stuck_ref_x, self.y - self.stuck_ref_y) > 0.05:
+            self.stuck_ref_x, self.stuck_ref_y = self.x, self.y
+            self.stuck_cycles = 0
+        else:
+            self.stuck_cycles += 1
+
+        # ~4 s casi sin moverse -> gira en el sitio hacia el lado mas abierto.
+        if self.stuck_cycles > 40:
+            self.stuck_cycles = 0
+            left = self.range_in_sector(math.pi / 2.0, math.radians(40.0))
+            right = self.range_in_sector(-math.pi / 2.0, math.radians(40.0))
+            self.recovery_dir = 1.0 if left > right else -1.0
+            self.recovery_cycles = 45        # tope de seguridad (~4.5 s)
+            self.reset_bug_state()           # salir de un follow_wall pegado
+            self.get_logger().warn('Atascado -> recovery (giro hasta despejar).')
+            self.publish_cmd(0.0, 0.45 * self.recovery_dir)
+            return
+
+        # Freno de emergencia (LiDAR, prioridad maxima): cubre un cono frontal
+        # ancho Y los costados delanteros, porque al girar el robot roza la
+        # pared con el costado aunque el frente este libre. Retrocede/gira hacia
+        # el lado mas abierto, en cualquier estado.
+        # Cono frontal ANGOSTO (±22°): asi las paredes laterales de un pasillo
+        # estrecho no caen aqui y no disparan el freno todo el tiempo. La guardia
+        # lateral es estrecha y solo salta ante contacto realmente inminente.
+        front = self.range_in_sector(0.0, math.radians(22.0))
+        side_l = self.range_in_sector(math.radians(50.0), math.radians(12.0))
+        side_r = self.range_in_sector(math.radians(-50.0), math.radians(12.0))
+        too_close_side = min(side_l, side_r)
+        if front < self.emergency_stop_distance or too_close_side < 0.13:
+            left = self.range_in_sector(math.pi / 2.0, math.radians(35.0))
+            right = self.range_in_sector(-math.pi / 2.0, math.radians(35.0))
+            turn = -1.0 if left < right else 1.0   # gira hacia donde hay mas hueco
+            back = -0.05 if front < self.emergency_stop_distance else 0.0
+            self.publish_cmd(back, 0.5 * turn)
+            return
+
         dist, angle_error = self.goal_error()
+
+        # Waypoint alcanzado?
         if dist < self.goal_tolerance:
             self.next_goal()
             return
 
-        if self.collision_guard():
-            return
-
-        self.state = 'go_to_goal'
-        self.go_to_goal(dist, angle_error)
-
-    def collision_guard(self):
-        front = self.range_in_sector(0.0, math.radians(25.0))
-        left = self.range_in_sector(math.pi / 2.0, math.radians(25.0))
-        right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
-
-        if front < self.emergency_stop_distance:
-            turn_left = right < left
-            self.publish_cmd(-0.015, 0.32 if turn_left else -0.32)
-            self.state = 'avoid_obstacle'
-            self.wall_side = 'right' if turn_left else 'left'
-            self.wall_lock_count = 10
-            return True
-
-        return False
+        # Despacho segun el estado actual. ESTO es lo que faltaba antes: el
+        # estado 'follow_wall' ahora es alcanzable y persistente, por lo que el
+        # robot bordea la pared hasta que pueda progresar de verdad hacia la
+        # meta, en vez de rebotar de inmediato hacia el mismo waypoint.
+        if self.state == 'go_to_goal':
+            self.go_to_goal(dist, angle_error)
+        else:  # 'follow_wall'
+            self.follow_wall(dist, angle_error)
 
     def goal_error(self):
         dx = self.goal_x - self.x
@@ -135,78 +193,132 @@ class ReactiveNavigation(Node):
             f'({self.goal_x:.2f}, {self.goal_y:.2f}).'
         )
 
+    def reset_bug_state(self):
+        # Vuelve a go_to_goal y limpia el estado del bordeo de pared.
+        self.state = 'go_to_goal'
+        self.wall_lock_count = 0
+        self.hit_point = None
+        self.best_goal_distance = math.inf
+
     def go_to_goal(self, dist, angle_error):
-        w = float(np.clip(2.0 * angle_error, -self.max_w, self.max_w))
+        # Si hay algo al frente camino a la meta, cambia a seguimiento de pared.
+        # La decision es puramente reactiva (LiDAR), no usa la pose estimada.
+        front = self.range_in_sector(0.0, math.radians(25.0))
+        if front < self.front_clearance:
+            self.enter_follow_wall(dist)
+            # ejecuta tambien una accion de wall-follow en este mismo ciclo
+            d, e = self.goal_error()
+            self.follow_wall(d, e)
+            return
+
+        # Banda muerta angular: ignora micro-errores de rumbo para no titilar
+        # (la fuente principal del "baile").
+        if abs(angle_error) < 0.05:
+            angle_error = 0.0
+        w = float(np.clip(1.3 * angle_error, -self.max_w, self.max_w))
+        # Velocidad lineal con caida CONTINUA segun el desalineo (cos), en vez
+        # de saltar entre 0 y avanzar: elimina el arranque-frenon.
         v = float(np.clip(0.8 * dist, 0.0, self.max_v))
-        if abs(angle_error) > 0.35:
+        if abs(angle_error) > 0.6:        # solo frena en seco si esta muy torcido
             v = 0.0
+        else:
+            v *= max(0.0, math.cos(angle_error))
         self.publish_cmd(v, w)
+
+    def enter_follow_wall(self, dist):
+        self.state = 'follow_wall'
+        self.hit_point = (self.x, self.y)
+        self.best_goal_distance = dist
+        self.wall_side = self.choose_wall_side()
+        self.wall_lock_count = 8           # compromiso breve para no titilar
+        self.get_logger().info(
+            f'Obstaculo al frente -> follow_wall por la {self.wall_side}.')
 
     def follow_wall(self, dist, angle_error):
         if self.wall_lock_count > 0:
             self.wall_lock_count -= 1
 
-        front = self.range_in_sector(0.0, math.radians(20.0))
-        left = self.range_in_sector(math.pi / 2.0, math.radians(20.0))
-        right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
-        front_left = self.range_in_sector(math.pi / 4.0, math.radians(20.0))
-        front_right = self.range_in_sector(-math.pi / 4.0, math.radians(20.0))
         self.best_goal_distance = min(self.best_goal_distance, dist)
 
+        # Sale de la pared en cuanto pueda progresar limpio hacia la meta.
         if self.can_leave_wall(dist, angle_error):
             self.state = 'go_to_goal'
             self.wall_lock_count = 0
+            self.get_logger().info('Camino a la meta despejado -> go_to_goal.')
             self.go_to_goal(dist, angle_error)
             return
 
-        diagonal = front_left if self.wall_side == 'left' else front_right
+        front = self.range_in_sector(0.0, math.radians(20.0))
+        if self.wall_side == 'left':
+            side = self.range_in_sector(math.pi / 2.0, math.radians(20.0))
+            diagonal = self.range_in_sector(math.pi / 4.0, math.radians(20.0))
+            turn_sign = -1.0
+        else:
+            side = self.range_in_sector(-math.pi / 2.0, math.radians(20.0))
+            diagonal = self.range_in_sector(-math.pi / 4.0, math.radians(20.0))
+            turn_sign = 1.0
 
         if front < self.front_clearance:
+            # Esquina interior: gira alejandote de la pared, sin avanzar.
             v = 0.0
-            w = -0.38 if self.wall_side == 'left' else 0.38
-        elif diagonal < self.wall_distance * 0.75:
-            v = 0.015
-            w = -0.42 if self.wall_side == 'left' else 0.42
+            w = 0.32 * turn_sign
+        elif diagonal < self.side_clearance:
+            # Rozando la pared con la esquina delantera: sal despacio.
+            v = 0.02
+            w = 0.38 * turn_sign
+        elif (not math.isfinite(side)) or side > self.wall_acquire_distance:
+            # Perdimos la pared (esquina exterior): curva de regreso hacia ella.
+            v = 0.04
+            w = -0.4 * turn_sign
         else:
-            if self.wall_side == 'left':
-                side_range = left
-                diagonal_range = front_left
-                turn_sign = -1.0
+            # Si hay pared en AMBOS lados (pasillo angosto) -> centra, para no
+            # pegarse al lado opuesto. Si no, sigue la pared a wall_distance.
+            opp = self.range_in_sector(turn_sign * math.pi / 2.0, math.radians(20.0))
+            if math.isfinite(opp) and (side + opp) < (2.0 * self.wall_distance + 0.20):
+                center_err = opp - side          # >0: mas hueco del lado opuesto
+                if abs(center_err) < 0.03:
+                    center_err = 0.0
+                w = float(np.clip(turn_sign * 1.0 * center_err, -0.4, 0.4))
             else:
-                side_range = right
-                diagonal_range = front_right
-                turn_sign = 1.0
+                error = self.wall_distance - side
+                if abs(error) < 0.03:
+                    error = 0.0
+                w = float(np.clip(-turn_sign * 1.0 * error, -0.45, 0.45))
+            # Frena de forma continua segun lo cerca que este el frente.
+            v = self.max_v * 0.6 * self._front_scale(front)
 
-            if not math.isfinite(side_range) or side_range > self.wall_acquire_distance:
-                v = 0.025
-                w = -0.35 * turn_sign
-            elif diagonal_range < self.side_clearance:
-                v = 0.02
-                w = 0.55 * turn_sign
-            else:
-                error = self.wall_distance - side_range
-                v = self.max_v * 0.55
-                w = float(np.clip(turn_sign * 1.2 * error, -0.45, 0.45))
         self.publish_cmd(v, w)
 
+    def _front_scale(self, front):
+        # 1.0 con frente despejado, baja linealmente a 0 al acercarse al limite.
+        lo = self.emergency_stop_distance
+        hi = self.front_clearance
+        if front >= hi:
+            return 1.0
+        if front <= lo:
+            return 0.0
+        return (front - lo) / (hi - lo)
+
     def choose_wall_side(self):
-        left = self.range_in_sector(math.pi / 2.0, math.radians(25.0))
-        right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
-        if left < right and left < self.wall_acquire_distance:
-            return 'left'
-        return 'right'
+        left = self.range_in_sector(math.pi / 2.0, math.radians(30.0))
+        right = self.range_in_sector(-math.pi / 2.0, math.radians(30.0))
+        # Mantiene la pared en el lado mas cercano.
+        return 'left' if left < right else 'right'
 
     def can_leave_wall(self, dist, angle_error):
         if self.wall_lock_count > 0:
             return False
+        # Hay que estar mas o menos mirando a la meta...
         if abs(angle_error) > math.radians(35.0):
             return False
+        # ...con el camino directo al frente despejado...
         if self.range_in_sector(0.0, math.radians(25.0)) < self.wall_leave_clearance:
             return False
         if self.range_in_sector(angle_error, math.radians(20.0)) < self.wall_leave_clearance:
             return False
+        # Bug2: solo sale si estamos mas cerca de la meta que en el hit point.
         if self.bug_algorithm == 2:
-            return dist < self.best_goal_distance - 0.08
+            return dist < self.best_goal_distance - 0.05
         return True
 
     def range_in_sector(self, center, half_width):

@@ -176,6 +176,14 @@ class Localisation(Node):
         self.sigma = (np.eye(3) - k @ g) @ self.sigma
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
+        # Confirmacion de actualizacion de pose por ArUco: ID visto, pose conocida
+        # del marcador, pose estimada del robot y correccion aplicada (delta).
+        self.get_logger().info(
+            f'ArUco {marker_id}: aruco=({mx:.2f}, {my:.2f}) '
+            f'pose_est=({self.x:.2f}, {self.y:.2f}, {math.degrees(self.theta):.0f} deg) '
+            f'corr=({float(delta[0]):+.3f}, {float(delta[1]):+.3f})',
+            throttle_duration_sec=0.5)
+
     def publish_odom(self, v, w):
         now = self.get_clock().now().to_msg()
         q = yaw_to_quat(self.theta)
