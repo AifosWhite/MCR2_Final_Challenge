@@ -42,6 +42,8 @@ setup(
             'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
             'localisation = puzzlebot_sim2.localisation:main',
             'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
+            'bug_controller = puzzlebot_sim2.bug_controller:main',
+            'aruco_detector_physical = puzzlebot_sim2.aruco_detector_physical:main',
             'visualization_node = puzzlebot_sim2.visualization_node:main',
             'aruco_detector = puzzlebot_sim2.aruco_detector:main',
             'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',

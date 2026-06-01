@@ -56,7 +56,7 @@ def generate_launch_description():
                     '-x', '-0.25',
                     '-y', '0.50',
                     '-z', '0.05',
-                    '-Y', '3.14',
+                    '-Y', '-0.72',
                 ],
                 output='screen',
             )
@@ -107,7 +107,7 @@ def generate_launch_description():
         parameters=[
             {'x0': -0.25},
             {'y0': 0.50},
-            {'theta0': 3.14},
+            {'theta0': -0.72},
             {'wheel_radius': 0.05},
             {'wheel_base': 0.19},
         ],
@@ -183,22 +183,31 @@ def generate_launch_description():
             'bug_mode': 2,
             'bug_direction': 'fwcw',
             'loop': True,
-            # Lazo rotado para empezar en (-0.25, 0.55) ~= spawn (-0.25, 0.50).
-            # Es el mismo lazo cerrado, solo cambia el indice de inicio.
-            'waypoints_x': [-0.25, -0.45, -1.30, -0.40, -0.20, 0.00, 0.10,
-                            0.90, 1.05, 1.20, 1.20, 1.00, 0.80, 0.05, 0.10,
-                            1.30, 1.00, 0.85, 0.25, 0.65, 0.50, 0.35, 0.15],
-            'waypoints_y': [0.55, 0.50, -0.30, 0.55, 0.50, -0.05, -0.45,
-                            -1.20, -1.15, -1.00, -1.00, -1.30, -1.10, -0.40,
-                            -0.20, 1.00, 0.70, 0.75, 1.30, 0.90, 0.20, 0.05,
-                            0.15],
-            'goal_tolerance': 0.16,
-            'max_linear_speed': 0.10,
-            'max_angular_speed': 1.8,
-            'ahead_clearance_angle_deg': 35.0,
-            'goal_heading_clear_angle_deg': 35.0,
-            'wall_follow_safety': 0.30,
+            # Ruta generada con A* + linea de vista sobre la geometria real del
+            # maze (inflado 0.10 m). SOLO usa la zona alcanzable desde el spawn
+            # (region superior): el laberinto es demasiado angosto para que el
+            # robot llegue al resto. Verificado: 0 segmentos cruzan pared,
+            # tramo promedio 0.30 m. Empieza en (-0.26,0.49) ~= spawn.
+            'waypoints_x': [-0.26, -0.02, 0.16, 0.16, 0.19, 0.43, 0.82, 1.06,
+                            0.88, 0.82, 0.40, 0.64, 0.49, 0.46, 0.43, 0.19,
+                            0.16, 0.16, -0.26],
+            'waypoints_y': [0.49, 0.28, 0.85, 1.09, 1.12, 1.12, 0.73, 0.73,
+                            0.73, 0.73, 1.15, 0.88, 0.82, 1.09, 1.12, 1.12,
+                            1.09, 0.37, 0.49],
+            'goal_tolerance': 0.13,
+            'max_linear_speed': 0.06,
+            'max_angular_speed': 1.0,
+            # Cono ANGOSTO + safety baja: como los waypoints ya van por el centro
+            # del pasillo en linea de vista, el robot debe CONDUCIR RECTO de WP a
+            # WP, no hacer wall-following (que en pasillos de doble pared zigzaguea
+            # y roza). Solo entra a follow_wall ante un obstaculo real de frente.
+            'ahead_clearance_angle_deg': 15.0,
+            'goal_heading_clear_angle_deg': 15.0,
+            'wall_follow_safety': 0.18,
             'line_distance_threshold_bug2': 0.15,
+            'center_gain': 2.6,
+            'center_trigger': 0.50,
+            'front_slow_distance': 0.40,
         }],
     )
 

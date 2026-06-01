@@ -40,6 +40,9 @@ class ReactiveNavigation(Node):
         self.declare_parameter('goal_heading_clear_angle_deg', 20.0)
         self.declare_parameter('wall_follow_safety', 0.35)
         self.declare_parameter('line_distance_threshold_bug2', 0.15)
+        self.declare_parameter('center_gain', 3.0)          # centrado reactivo
+        self.declare_parameter('center_trigger', 0.45)      # activa si pared < esto
+        self.declare_parameter('front_slow_distance', 0.40) # frena al acercarse de frente
         self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('scan_topic', 'scan')
         self.declare_parameter('cmd_vel_topic', 'cmd_vel')
@@ -65,6 +68,9 @@ class ReactiveNavigation(Node):
         self.wall_follow_safety = float(self.get_parameter('wall_follow_safety').value)
         self.line_distance_threshold_bug2 = float(
             self.get_parameter('line_distance_threshold_bug2').value)
+        self.center_gain = float(self.get_parameter('center_gain').value)
+        self.center_trigger = float(self.get_parameter('center_trigger').value)
+        self.front_slow_distance = float(self.get_parameter('front_slow_distance').value)
         odom_topic = str(self.get_parameter('odom_topic').value)
         scan_topic = str(self.get_parameter('scan_topic').value)
         cmd_vel_topic = str(self.get_parameter('cmd_vel_topic').value)
@@ -205,6 +211,17 @@ class ReactiveNavigation(Node):
     def go_to_goal(self, dist, ang_error):
         if dist <= self.goal_tolerance:
             return 0.0, 0.0
+
+        # Esquina apretada: si el frente esta bloqueado y hay que girar mucho,
+        # el robot no cabe para pivotar. Retrocede (si hay hueco atras) mientras
+        # gira hacia la meta para ganar espacio; si no hay hueco atras, pivota.
+        front_now = self.min_range_in_sector(0.0, np.deg2rad(20.0))
+        if front_now < 0.27 and abs(ang_error) > 0.6:
+            wt = float(np.clip(1.5 * ang_error,
+                               -self.max_angular_speed, self.max_angular_speed))
+            rear = self.min_range_in_sector(np.pi, np.deg2rad(25.0))
+            return (-0.04 if rear > 0.27 else 0.0), wt
+
         if abs(ang_error) > np.pi / 2:
             return 0.0, np.clip(2.0 * ang_error,
                                 -self.max_angular_speed, self.max_angular_speed)
@@ -212,6 +229,28 @@ class ReactiveNavigation(Node):
         w = np.clip(2.0 * ang_error, -self.max_angular_speed, self.max_angular_speed)
         if abs(ang_error) > 0.4:
             v *= 0.2
+
+        # Centrado reactivo: SOLO cuando va casi recto (no en esquinas, para no
+        # pelear contra el giro al waypoint) y con pared a AMBOS lados. Corrige
+        # suave para alejarse de la pared mas cercana y quedar al centro.
+        if abs(ang_error) < 0.45:
+            left = self.min_range_in_sector(np.pi / 2.0, np.deg2rad(30.0))
+            right = self.min_range_in_sector(-np.pi / 2.0, np.deg2rad(30.0))
+            if (np.isfinite(left) and np.isfinite(right)
+                    and min(left, right) < self.center_trigger):
+                err = left - right                   # >0: mas hueco izq -> gira izq
+                if abs(err) > 0.04:                  # banda muerta (no titilar)
+                    w += self.center_gain * err
+                    w = float(np.clip(w, -self.max_angular_speed,
+                                      self.max_angular_speed))
+
+        # Frenado frontal: si hay pared cerca al frente (su heading), reduce la
+        # velocidad lineal de forma gradual para tener tiempo de PIVOTAR hacia el
+        # siguiente waypoint antes de quedarse sin espacio. Asi no "gira tarde".
+        front = self.min_range_in_sector(0.0, np.deg2rad(20.0))
+        if front < self.front_slow_distance:
+            scale = (front - 0.16) / (self.front_slow_distance - 0.16)
+            v *= float(np.clip(scale, 0.0, 1.0))
         return v, w
 
     # ---- Bug2: m-line -----------------------------------------------------
