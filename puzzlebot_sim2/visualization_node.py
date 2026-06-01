@@ -4,6 +4,7 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 
@@ -184,11 +185,11 @@ def main(args=None):
     node = LocalisationVisualization()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.destroy_node()
         if rclpy.ok():
+            node.destroy_node()
             rclpy.shutdown()
 
 

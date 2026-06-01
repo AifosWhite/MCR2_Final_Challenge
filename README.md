@@ -6,7 +6,20 @@ The package is organized around a simple rule: first prove navigation, then add 
 
 ## Main workflows
 
-### 1. Clean simulation workflow
+This package now keeps only two launch files:
+
+- `bringup_simulation.launch.py` — launch Gazebo with the maze world and spawn the robot.
+- `final_simulation_clean.launch.py` — launch the clean simulation workflow with the ROS nodes.
+
+### 1. Gazebo launch
+
+Use this to start Gazebo and spawn the robot in the world:
+
+```bash
+ros2 launch puzzlebot_sim2 bringup_simulation.launch.py
+```
+
+### 2. Clean simulation workflow
 
 This is the recommended launch for development. It opens the maze and ArUco models in Gazebo, but the ROS algorithmic loop is lightweight and stable:
 
@@ -28,26 +41,6 @@ Run with camera-based ArUco detection instead of simulated ArUco detections:
 
 ```bash
 ros2 launch puzzlebot_sim2 final_simulation_clean.launch.py use_camera_arucos:=true use_sim_aruco:=false use_rviz:=true
-```
-
-### 2. Minimal Gazebo-only navigation
-
-Use this only after the clean simulation works. This launch expects Gazebo to provide `/odom` and `/scan` through the bridge.
-
-```bash
-ros2 launch puzzlebot_sim2 gazebo_navigation_minimal.launch.py
-```
-
-With RViz:
-
-```bash
-ros2 launch puzzlebot_sim2 gazebo_navigation_minimal.launch.py use_rviz:=true
-```
-
-### 3. RViz only
-
-```bash
-ros2 launch puzzlebot_sim2 rviz_only_clean.launch.py
 ```
 
 ## Important nodes

@@ -12,13 +12,12 @@ command /cmd_vel.
 """
 
 import math
-import signal
-import sys
 from typing import List, Optional, Tuple
 
 import rclpy
 from geometry_msgs.msg import Pose2D, Twist
 from nav_msgs.msg import Odometry
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
@@ -156,7 +155,6 @@ class FinalBugNavigation(Node):
         self.cmd_pub = self.create_publisher(Twist, self.cmd_vel_topic, 10)
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
-        signal.signal(signal.SIGINT, self.shutdown_function)
 
         if self.run_waypoint_sequence and self.waypoints:
             self.set_goal(self.waypoints[0], source='initial waypoint')
@@ -381,8 +379,6 @@ class FinalBugNavigation(Node):
     def shutdown_function(self, signum, frame):
         self.get_logger().info('Shutdown requested -> stop robot')
         self.publish_stop()
-        rclpy.shutdown()
-        sys.exit(0)
 
 
 def main(args=None):
@@ -390,12 +386,12 @@ def main(args=None):
     node = FinalBugNavigation()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         node.publish_stop()
-        node.destroy_node()
         if rclpy.ok():
+            node.destroy_node()
             rclpy.shutdown()
 
 

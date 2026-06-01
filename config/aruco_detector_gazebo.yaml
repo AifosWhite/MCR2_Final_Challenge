@@ -1,0 +1,8 @@
+aruco_detector:
+  ros__parameters:
+    image_topic: "/camera/image_raw"
+    marker_length: 0.165
+    camera_frame: "camera_link"
+    parent_frame: "base_link"
+    camera_fov: 1.047
+    dictionary: "DICT_4X4_250"

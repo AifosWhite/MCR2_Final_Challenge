@@ -28,6 +28,8 @@ class ReactiveNavigation(Node):
             self.waypoints = [(1.15, -1.15)]
         self.goal_index = 0
         self.goal_x, self.goal_y = self.waypoints[self.goal_index]
+        # Log the full waypoint list for debugging (helps confirm parameters loaded)
+        self.get_logger().info(f'Waypoints loaded: {self.waypoints}')
         self.goal_tolerance = float(self.get_parameter('goal_tolerance').value)
         self.max_v = float(self.get_parameter('max_linear_speed').value)
         self.max_w = float(self.get_parameter('max_angular_speed').value)
@@ -69,7 +71,7 @@ class ReactiveNavigation(Node):
         self.state = 'go_to_goal'
         self.hit_point = None
         self.best_goal_distance = math.inf
-        self.get_logger().info(f'Nueva meta: ({self.goal_x:.2f}, {self.goal_y:.2f}).')
+        self.get_logger().info(f'Nueva meta (external): ({self.goal_x:.2f}, {self.goal_y:.2f}).')
 
     def control_loop(self):
         if self.scan is None:
@@ -109,8 +111,8 @@ class ReactiveNavigation(Node):
         self.hit_point = None
         self.best_goal_distance = math.inf
         self.get_logger().info(
-            f'Meta alcanzada. Siguiente WP{self.goal_index}: '
-            f'({self.goal_x:.2f}, {self.goal_y:.2f}).'
+            f'Meta alcanzada. Siguiente WP index={self.goal_index}: '
+            f'({self.goal_x:.2f}, {self.goal_y:.2f}). Waypoints={self.waypoints}'
         )
 
     def go_to_goal(self, dist, angle_error):

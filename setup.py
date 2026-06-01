@@ -51,6 +51,7 @@ setup(
             'aruco_tf_listener = puzzlebot_sim2.aruco_tf_listener:main',
             'waypoint_driver = puzzlebot_sim2.waypoint_driver:main',
             'aruco_detector = puzzlebot_sim2.aruco_detector:main',
+            'gazebo_covariance_node = puzzlebot_sim2.gazebo_covariance_node:main',
         ],
     },
 )
