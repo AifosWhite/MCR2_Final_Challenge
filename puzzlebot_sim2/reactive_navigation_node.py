@@ -99,31 +99,14 @@ class ReactiveNavigation(Node):
 
     def collision_guard(self):
         front = self.range_in_sector(0.0, math.radians(25.0))
-        front_left = self.range_in_sector(math.pi / 4.0, math.radians(20.0))
-        front_right = self.range_in_sector(-math.pi / 4.0, math.radians(20.0))
         left = self.range_in_sector(math.pi / 2.0, math.radians(25.0))
         right = self.range_in_sector(-math.pi / 2.0, math.radians(25.0))
 
-        if front < self.front_clearance:
+        if front < self.emergency_stop_distance:
             turn_left = right < left
-            turn_speed = 0.40 if front < self.emergency_stop_distance else 0.28
-            self.publish_cmd(0.0, turn_speed if turn_left else -turn_speed)
+            self.publish_cmd(-0.015, 0.32 if turn_left else -0.32)
             self.state = 'avoid_obstacle'
             self.wall_side = 'right' if turn_left else 'left'
-            self.wall_lock_count = 10
-            return True
-
-        if front_right < self.side_clearance or right < self.side_clearance:
-            self.publish_cmd(0.012, 0.28)
-            self.state = 'avoid_obstacle'
-            self.wall_side = 'right'
-            self.wall_lock_count = 10
-            return True
-
-        if front_left < self.side_clearance or left < self.side_clearance:
-            self.publish_cmd(0.012, -0.28)
-            self.state = 'avoid_obstacle'
-            self.wall_side = 'left'
             self.wall_lock_count = 10
             return True
 
@@ -157,9 +140,6 @@ class ReactiveNavigation(Node):
         v = float(np.clip(0.8 * dist, 0.0, self.max_v))
         if abs(angle_error) > 0.35:
             v = 0.0
-        front = self.range_in_sector(0.0, math.radians(25.0))
-        if front < self.front_clearance * 1.5:
-            v = min(v, 0.03)
         self.publish_cmd(v, w)
 
     def follow_wall(self, dist, angle_error):
