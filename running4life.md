@@ -9,7 +9,7 @@ Probar el sistema por etapas:
 3. Probar localización sin navegación.
 4. Validar parámetros corregidos:
 
-   * `marker_size_m = 0.096`
+   * `marker_size_m = 0.094`
    * `use_tvec_z_correction = false`
    * pose inicial correcta
    * marcadores correctos
@@ -23,9 +23,24 @@ Probar el sistema por etapas:
 En todas las terminales usar:
 
 ```bash
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
+```
+
+Si existe otro workspace con un paquete llamado `puzzlebot_sim2` (por ejemplo
+`~/ros2_ws`) ya cargado en la terminal, abrir una terminal limpia antes de
+seguir. Después de hacer `source install/setup.bash` en este proyecto, validar:
+
+```bash
+ros2 pkg prefix puzzlebot_sim2
+```
+
+Debe apuntar a:
+
+```text
+/home/karinam/MCR2_Final_Challenge/install/puzzlebot_sim2
 ```
 
 ---
@@ -41,6 +56,7 @@ ssh puzzlebot@10.201.233.217
 
 ```bash
 cd ~/ros2_ws
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
@@ -53,7 +69,7 @@ Verificar que la cámara esté activa:
 
 ```bash
 ros2 topic list | grep image
-ros2 topic hz /image_raw
+ros2 topic hz /video_source/raw
 ```
 
 Si el tópico tiene otro nombre, revisar:
@@ -73,6 +89,7 @@ ssh puzzlebot@10.201.233.217
 
 ```bash
 cd ~/ros2_ws
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
@@ -107,6 +124,7 @@ ssh puzzlebot@10.201.233.217
 
 ```bash
 cd ~/ros2_ws
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
@@ -136,12 +154,14 @@ ros2 launch rplidar_ros rplidar_lidar_a1_launch.py serial_port:=/dev/ttyUSB0
 
 ```bash
 cd ~/MCR2_Final_Challenge
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
 
 colcon build --packages-select puzzlebot_sim2
 source install/setup.bash
+ros2 pkg prefix puzzlebot_sim2
 ```
 
 ---
@@ -151,13 +171,14 @@ source install/setup.bash
 Antes de activar navegación, correr sin `bug_controller`:
 
 ```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=false use_rviz:=true --ros-args --log-level info
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=false use_rviz:=true
 ```
 
 En otra terminal:
 
 ```bash
 cd ~/MCR2_Final_Challenge
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
@@ -197,7 +218,7 @@ ros2 param get /aruco_detector use_tvec_z_correction
 Esperado:
 
 ```text
-marker_size_m = 0.096
+marker_size_m = 0.094
 use_tvec_z_correction = False
 ```
 
@@ -257,7 +278,7 @@ Antes salía cerca de 0.38 m porque marker_size_m estaba mal.
 Si ahora sale cercano a la distancia real, el cambio de:
 
 ```text
-marker_size_m: 0.096
+marker_size_m: 0.094
 ```
 
 está funcionando.
@@ -293,7 +314,7 @@ theta0 = 0 apunta hacia +x
 Ejecutar navegación:
 
 ```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true --ros-args --log-level info
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true
 ```
 
 En otra terminal revisar:
@@ -351,7 +372,7 @@ Solo después de validar:
 /odom funciona
 /aruco/detections funciona
 /scan funciona
-marker_size_m = 0.096
+marker_size_m = 0.094
 use_tvec_z_correction = False
 x0, y0, theta0 están correctos
 el waypoint hacia +x funciona
@@ -367,7 +388,7 @@ config/navigation_physical.yaml
 y correr:
 
 ```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true --ros-args --log-level info
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true
 ```
 
 Revisar:
@@ -388,6 +409,7 @@ Para ver la cámara:
 
 ```bash
 cd ~/MCR2_Final_Challenge
+source /opt/ros/humble/setup.bash
 unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
@@ -421,7 +443,7 @@ Revisar cámara:
 
 ```bash
 ros2 topic list | grep image
-ros2 topic hz /image_raw
+ros2 topic hz /video_source/raw
 ```
 
 Revisar que el detector esté corriendo:
@@ -551,4 +573,3 @@ timedatectl status
 11. Probar movimiento hacia -y.
 12. Probar navegación completa.
 ```
-
