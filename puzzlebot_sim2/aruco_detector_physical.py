@@ -104,9 +104,6 @@ class ArucoDetectorPhysical(Node):
             f'aruco_detector (fisico) listo. Imagen={image_topic}, '
             f'dict={dict_name}, marker={self.marker_size} m, '
             f'use_tf={self.use_tf}.')
-        self.get_logger().warn(
-            'RECORDATORIO: pon la matriz de camara y distorsion REALES de tu '
-            'Puzzlebot via parametros. Los valores por defecto NO son los tuyos.')
 
     def image_callback(self, msg):
         self.latest_msg = msg

@@ -330,6 +330,14 @@ class BugController(Node):
                 self.get_logger().info('Objetivo alcanzado.')
                 return
 
+        # Log de estado para tunear navegacion (1 Hz). Modo, distancia a meta,
+        # holguras del LiDAR y el comando publicado.
+        self.get_logger().info(
+            f'[{self.controller_mode}] WP{self.goal_index} d={d:.2f} '
+            f'front={self.min_front:.2f} side={self.min_side:.2f} '
+            f'v={twist.linear.x:+.2f} w={twist.angular.z:+.2f}',
+            throttle_duration_sec=1.0)
+
         self.cmd_vel_publisher.publish(twist)
 
     # ---- Helpers de regiones LiDAR ---------------------------------------

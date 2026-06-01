@@ -51,6 +51,7 @@ aruco_detector:
 viz_debug:
   ros__parameters:
     frame_id: "odom"
+    err_log_threshold: 0.15        # solo loguea si el error de localiz. supera esto (m)
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708]
     marker_pos_x: [-1.25, 0.75, -1.55,  0.35,  0.95, -0.10, -0.15,  0.05]
     marker_pos_y: [ 0.10, 1.15, -0.25, -1.25, -0.25, -0.45,  0.55, -0.15]

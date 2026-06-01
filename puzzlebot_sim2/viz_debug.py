@@ -10,8 +10,9 @@ Pensado para tunear la localizacion (EKF + ArUco) viendo en RViz y en consola:
     error de localizacion de un vistazo.
 
 No tiene dependencias de simulacion. Publica MarkerArray en /localisation_markers
-(el topico que ya escucha tu RViz) y loguea cada deteccion con:
-    yo creo estar en (x,y,theta) | leo el aruco en (ox,oy) | el mapa dice (mx,my)
+(el topico que ya escucha tu RViz) y loguea de forma compacta SOLO cuando el
+error de localizacion supera 'err_log_threshold' (default 0.15 m):
+    aruco 70 | error 0.32 m (leo en -1.20,+0.15 | mapa -1.25,+0.10)
 
 Suscribe:
   /odom               (nav_msgs/Odometry)        -> pose estimada
@@ -41,6 +42,8 @@ class VizDebug(Node):
         self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('detections_topic', '/aruco/detections')
         self.declare_parameter('frame_id', 'odom')
+        # Solo loguea en consola cuando el error de localizacion supere esto (m).
+        self.declare_parameter('err_log_threshold', 0.15)
 
         ids = list(self.get_parameter('marker_ids').value)
         xs = list(self.get_parameter('marker_pos_x').value)
@@ -50,6 +53,8 @@ class VizDebug(Node):
         self.frame_id = str(self.get_parameter('frame_id').value)
         odom_topic = str(self.get_parameter('odom_topic').value)
         det_topic = str(self.get_parameter('detections_topic').value)
+        self.err_log_threshold = float(
+            self.get_parameter('err_log_threshold').value)
 
         self.x = 0.0
         self.y = 0.0
@@ -91,19 +96,19 @@ class VizDebug(Node):
         self.last_obs = (mid, ox, oy)
         self.last_obs_count = 15        # ~1.5 s visible
 
-        # Log de depuracion: estimada vs leida vs mapa
+        # Log de depuracion compacto: solo cuando el error supera el umbral.
         if mid in self.markers_map:
             mx, my = self.markers_map[mid]
             err = float(np.hypot(ox - mx, oy - my))
-            self.get_logger().info(
-                f'VE aruco {mid}: creo_estar=({self.x:+.2f},{self.y:+.2f},'
-                f'{np.degrees(self.theta):+.0f}d) | leo_aruco_en=({ox:+.2f},{oy:+.2f}) '
-                f'| mapa_dice=({mx:+.2f},{my:+.2f}) | dist={dist:.2f} '
-                f'bearing={np.degrees(bearing):+.0f}d | ERROR={err:.2f}m')
+            if err > self.err_log_threshold:
+                self.get_logger().warn(
+                    f'aruco {mid} | error {err:.2f} m '
+                    f'(leo en {ox:+.2f},{oy:+.2f} | mapa {mx:+.2f},{my:+.2f})',
+                    throttle_duration_sec=1.0)
         else:
             self.get_logger().warn(
-                f'VE aruco {mid} pero NO esta en el mapa (revisa marker_ids). '
-                f'leo_aruco_en=({ox:+.2f},{oy:+.2f}) dist={dist:.2f}')
+                f'aruco {mid} no esta en el mapa (revisa marker_ids).',
+                throttle_duration_sec=2.0)
 
     # ---- Publicacion de markers ------------------------------------------
     def publish_markers(self):
