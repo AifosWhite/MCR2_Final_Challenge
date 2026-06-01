@@ -34,12 +34,12 @@ class VizDebug(Node):
         super().__init__('viz_debug')
 
         # Mapa de marcadores (mismas posiciones que localisation_physical.yaml)
-        # Origen (0,0) = esquina inferior-izquierda. x=a pared izq, y=al piso (m).
+        # Origen (0,0) = esquina inferior-izquierda. x crece arriba, y negativo derecha (m).
         self.declare_parameter('marker_ids', [70, 75, 701, 702, 703, 705, 706, 708])
         self.declare_parameter('marker_pos_x',
-                               [0.30, 2.40, 0.00, 1.83, 2.07, 1.20, 1.255, 1.21])
+                               [1.85, 2.75, 2.82, 0.27, 1.24, 0.89, 2.455, 1.185])
         self.declare_parameter('marker_pos_y',
-                               [1.85, 2.75, 1.30, 0.27, 1.24, 0.89, 2.455, 1.185])
+                               [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21])
         self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('detections_topic', '/aruco/detections')
         self.declare_parameter('frame_id', 'odom')
