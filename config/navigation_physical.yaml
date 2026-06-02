@@ -6,7 +6,7 @@ bug_controller:
     controller_update_rate: 25.0
     controller_type: "BUG2"        # "BUG0" o "BUG2"
     overwrite_min_max_angles: true # IMPORTANTE en fisico: LiDAR real va 0..2pi
-    loop: true
+    loop: false
 
     # Tolerancias de llegada
     distance_tolerance: 0.12
@@ -40,7 +40,6 @@ bug_controller:
     front_open_angle: 0.4
     target_open_angle: 0.5
 
-
     # Offset de montaje del LiDAR (rad): angulo del scan que mira al FRENTE del robot.
     # Si al arrancar lee la pared de ATRAS como "front" y se mete a wall-following,
     # el LiDAR esta girado ~180 deg -> usa 3.14159. Calibra viendo /scan en RViz.
@@ -57,5 +56,10 @@ bug_controller:
     # --- Lazo completo del maze (ACTIVO; verificar segmentos en RViz) ---
     # Lazo: 70->701->706->75->703->702->708->705. Puntos frente a cada marcador OK,
     # segmentos NO verificados aun contra paredes interiores -> vigilar en la 1a vuelta.
-    waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
-    waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]
+    # waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
+    # waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]
+
+    # Prueba 4: waypoint simple hacia +x.
+    # Cuando esto funcione, regresar aqui la ruta completa del laberinto.
+    waypoints_x: [0.60, 1.00]
+    waypoints_y: [-0.28, -0.28]
