@@ -94,6 +94,11 @@ class BugController(Node):
         # (p.ej. lee la pared de atras como "frente"). Calibra: 0 si el 0 del scan
         # mira al frente; ~3.14159 si mira hacia atras.
         self.declare_parameter('lidar_yaw_offset', 3.14159)
+        # Limite de aceleracion angular (rad/s^2). Suaviza los giros evitando que
+        # w salte de golpe (sobre todo en following_walls). 0 = sin limite.
+        self.declare_parameter('max_w_accel', 4.0)
+        # Tolerancia (m) para re-enganchar la m-line y salir de wall-following (BUG2).
+        self.declare_parameter('bug2_line_tol', 0.15)
 
         # Modo lista de waypoints (si vacio, espera setpoints por topico).
         self.declare_parameter('waypoints_x', DEFAULT_WAYPOINTS_X)
@@ -126,6 +131,8 @@ class BugController(Node):
         self.controller_type = str(gp('controller_type').value)
         self.using_real_robot = bool(gp('overwrite_min_max_angles').value)
         self.lidar_yaw_offset = float(gp('lidar_yaw_offset').value)
+        self.max_w_accel = float(gp('max_w_accel').value)
+        self.bug2_line_tol = float(gp('bug2_line_tol').value)
         self.loop = bool(gp('loop').value)
         odom_topic = str(gp('odom_topic').value)
         scan_topic = str(gp('scan_topic').value)
@@ -156,6 +163,7 @@ class BugController(Node):
         self.target_line = None
         self.lidar_min_range = 0.15
         self.collision_time = self.get_clock().now()
+        self.prev_w = 0.0   # ultimo w publicado (para limitar aceleracion angular)
 
         self.fw_dirs = {'left': 1, 'right': -1}
         self.fw_dir = 'right'
@@ -268,7 +276,10 @@ class BugController(Node):
                     self.controller_mode = 'p2p_controller'
             elif self.controller_type == 'BUG2':
                 err_y = self.target_line(self.robot_pose.x) - self.robot_pose.y
-                if abs(err_y) < 0.05 and min_target > self.front_stop_distance + 0.2:
+                # Tolerancia de re-enganche a la m-line aflojada (antes 0.05): con
+                # 5 cm casi nunca salia del wall-following y se quedaba dando vueltas.
+                if abs(err_y) < self.bug2_line_tol and \
+                        min_target > self.front_stop_distance + 0.2:
                     self.controller_mode = 'p2p_controller'
                     self.start_pose = None
 
@@ -335,6 +346,7 @@ class BugController(Node):
         if self.use_waypoint_list:
             # en modo lista no exigimos orientacion final salvo ultimo punto
             if reached:
+                self.prev_w = 0.0
                 self.cmd_vel_publisher.publish(Twist())
                 self._advance_waypoint()
                 return
@@ -346,6 +358,14 @@ class BugController(Node):
                 self.cmd_vel_publisher.publish(Twist())
                 self.get_logger().info('Objetivo alcanzado.')
                 return
+
+        # Suaviza: limita la aceleracion angular para que w no salte de golpe
+        # (sobre todo en following_walls / backup de colision) -> giros suaves.
+        if self.max_w_accel > 0.0:
+            dw_max = self.max_w_accel / self.update_rate
+            twist.angular.z = self.prev_w + float(
+                np.clip(twist.angular.z - self.prev_w, -dw_max, dw_max))
+        self.prev_w = twist.angular.z
 
         # Log de estado para tunear navegacion (1 Hz). Modo, distancia a meta,
         # holguras del LiDAR y el comando publicado.

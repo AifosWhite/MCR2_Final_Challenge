@@ -61,6 +61,7 @@ class VizDebug(Node):
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
+        self.cov = (0.0, 0.0, 0.0)      # (Pxx, Pyy, Pxy) de la covarianza del EKF
         self.path = []                  # trayectoria (x,y)
         self.last_obs = None            # (id, ox, oy) ultima lectura de aruco
         self.last_obs_count = 0         # ciclos que mantenemos la linea visible
@@ -83,6 +84,9 @@ class VizDebug(Node):
         siny = 2.0 * (q.w * q.z + q.x * q.y)
         cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         self.theta = float(np.arctan2(siny, cosy))
+        # Covarianza de pose: indices 0=xx, 7=yy, 1=xy del array 6x6 de Odometry.
+        cov = msg.pose.covariance
+        self.cov = (float(cov[0]), float(cov[7]), float(cov[1]))
         self.path.append((self.x, self.y))
         if len(self.path) > 2000:
             self.path = self.path[-2000:]
@@ -164,6 +168,31 @@ class VizDebug(Node):
         pose.pose.orientation.z = float(np.sin(self.theta / 2.0))
         pose.pose.orientation.w = float(np.cos(self.theta / 2.0))
         arr.markers.append(pose)
+
+        # --- Elipse de confianza (covarianza del EKF, ~2 sigma) ---
+        # Crece con el dead-reckoning y se encoge al corregir con ArUco.
+        Pxx, Pyy, Pxy = self.cov
+        P = np.array([[Pxx, Pxy], [Pxy, Pyy]])
+        vals, vecs = np.linalg.eigh(P)            # ascendente; vals[1] = eje mayor
+        vals = np.clip(vals, 0.0, None)
+        ang = float(np.arctan2(vecs[1, 1], vecs[0, 1]))
+        k = 2.0                                   # ~95% de confianza
+        # Diametros 2-sigma, acotados: minimo 0.15 m (siempre visible aunque la
+        # covarianza sea ~0 al estar bien localizado) y maximo 1.5 m (que no llene
+        # la pantalla al derivar). Se sigue notando crecer/encoger entre esos limites.
+        major = float(np.clip(2.0 * k * np.sqrt(vals[1]), 0.20, 2.0))
+        minor = float(np.clip(2.0 * k * np.sqrt(vals[0]), 0.20, 2.0))
+        ell = new_marker('cov_ellipse', Marker.CYLINDER)
+        ell.pose.position.x = self.x
+        ell.pose.position.y = self.y
+        ell.pose.position.z = 0.03
+        ell.pose.orientation.z = float(np.sin(ang / 2.0))
+        ell.pose.orientation.w = float(np.cos(ang / 2.0))
+        ell.scale.x = major
+        ell.scale.y = minor
+        ell.scale.z = 0.03
+        ell.color = ColorRGBA(r=1.0, g=0.85, b=0.0, a=0.55)
+        arr.markers.append(ell)
 
         # --- Trayectoria: linea ---
         if len(self.path) > 1:
