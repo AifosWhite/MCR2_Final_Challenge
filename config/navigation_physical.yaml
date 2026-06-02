@@ -34,7 +34,16 @@ bug_controller:
     front_open_angle: 0.4
     target_open_angle: 0.5
 
-    # Ruta cerrada (origin-centered, frame odom/EKF).
-    # En FISICO, reemplaza por los centros de pasillo medidos en tu maze real.
-    waypoints_x: [0.60, 1.00]
-    waypoints_y: [-0.28, -0.28]
+    # === OPCION A: ruta corta SEGURA (primera prueba real) ===
+    # Ida y vuelta por el pasillo IZQUIERDO (libre desde el inicio), frame esquina:
+    # x arriba [0,3.075], y neg a la derecha [0,-3.05]. Inicio robot (0.325,-0.28) mira +x.
+    # Recorrido: sube por y~-0.3, pasa frente al marcador 70 (1.85,-0.30, mira abajo) ->
+    # llega cerca de 701 arriba (2.82,0.0) -> regresa. Sin cruces diagonales (esos chocan).
+    waypoints_x: [1.00, 1.70, 2.60, 1.70, 0.50]
+    waypoints_y: [-0.28, -0.30, -0.20, -0.30, -0.28]
+
+    # --- Lazo completo del maze (BORRADOR, requiere verificar en RViz antes de usar) ---
+    # Lazo: 70->701->706->75->703->702->708->705. Puntos frente a cada marcador OK,
+    # pero segmentos NO verificados contra paredes interiores.
+    # waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
+    # waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]

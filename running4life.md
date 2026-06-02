@@ -424,41 +424,78 @@ En odom, y debe volverse más negativo.
 
 ---
 
-# 8. Prueba 6 — Navegación completa
+# 8. Prueba 6 — Navegación real
 
-Solo después de validar:
+## 8.1 Opción A — Ruta corta SEGURA (primera prueba real, recomendada)
 
-```text
-/odom funciona
-/aruco/detections funciona
-/scan funciona
-marker_size_m = 0.094
-use_tvec_z_correction = False
-x0, y0, theta0 están correctos
-el waypoint hacia +x funciona
-el movimiento hacia -y funciona
+Ida y vuelta por el **pasillo izquierdo**, que está libre desde el inicio. El robot
+avanza, pasa frente al marcador **70**, corrige su pose con el EKF, sigue pared si
+hace falta, y regresa. Es navegación real, pero sin meterse a los cruces diagonales
+que sabemos que chocan.
+
+Ya viene activa en `config/navigation_physical.yaml`:
+
+```yaml
+bug_controller:
+  ros__parameters:
+    loop: false
+    waypoints_x: [1.00, 1.70, 2.60, 1.70, 0.50]
+    waypoints_y: [-0.28, -0.30, -0.20, -0.30, -0.28]
 ```
 
-activar la ruta completa del laberinto en:
+Recordatorio de ejes: `x` arriba, `y` negativo a la derecha, `theta0=0` mira a `+x`.
+
+Antes de correr, confirma el pipeline (ver 6.3): `/odom` publica y cambia al mover el
+robot, encoders llegan, `/scan` se ve en RViz. Luego:
 
 ```bash
-config/navigation_physical.yaml
+# rebuild si cambiaste configs
+cd ~/MCR2_Final_Challenge && colcon build --packages-select puzzlebot_sim2 && source install/setup.bash
+
+ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true
 ```
 
-y correr:
-
-```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py use_rviz:=true
-```
-
-Revisar:
+En otra terminal:
 
 ```bash
 ros2 topic echo /cmd_vel
 ros2 topic echo /goal_reached
-ros2 topic echo /odom
-ros2 topic echo /scan
+ros2 topic echo /odom --field pose.pose.position
 ros2 topic echo /aruco/detections
+```
+
+Lo esperado:
+
+```text
+- El robot avanza hacia ARRIBA (+x) por el pasillo izquierdo (y se mantiene ~-0.3).
+- Al pasar frente al ID 70, /aruco/detections publica [70, dist, bearing] y la pose
+  en /odom se corrige (pequeño salto coherente con la posicion del marcador).
+- Llega cerca del tope (x~2.6), da media vuelta y regresa hacia (0.50, -0.28).
+- Con loop:false, al alcanzar el ultimo WP imprime 'Ruta completa' y se detiene.
+- En RViz: la flecha de pose sigue el pasillo y el /scan dibuja las paredes a los lados.
+```
+
+Si roza una pared, baja `v_max`/`fw_linear_speed` en `navigation_physical.yaml` y revisa
+que `following_walls_distance`/`front_stop_distance` sean conservadores.
+
+## 8.2 Ruta completa del maze (solo tras validar 8.1)
+
+Solo después de validar:
+
+```text
+/odom funciona y se corrige con ArUco
+/scan se ve en RViz (paredes coherentes)
+la ruta corta (8.1) se recorre sin chocar
+```
+
+cambiar a la **ruta completa** en `config/navigation_physical.yaml` (en el archivo está
+comentado el lazo de 8 puntos `70->701->706->75->703->702->708->705`), poner `loop: true`,
+**verificar cada tramo en RViz** contra el `/scan` y el mapa de marcadores (`viz_debug`),
+y agregar puntos intermedios donde una recta roce pared. Luego correr igual que 8.1 y
+revisar además:
+
+```bash
+ros2 topic echo /scan
 ```
 
 ---

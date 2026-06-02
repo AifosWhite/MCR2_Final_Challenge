@@ -47,6 +47,18 @@ def generate_launch_description():
         ],
     )
 
+    # El rplidar fisico publica /scan en el frame 'laser', pero el URDF nombra el
+    # frame del LiDAR 'laser_frame'. Sin este puente, RViz descarta el scan (no hay
+    # TF a 'laser'). Alias identidad laser_frame -> laser para que /scan se vea.
+    # (Alternativa: lanzar rplidar con frame_id:=laser_frame y quitar esto.)
+    laser_frame_alias = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='laser_frame_alias',
+        arguments=['0', '0', '0', '0', '0', '0', 'laser_frame', 'laser'],
+        output='screen',
+    )
+
     # EKF / localizacion. Remapeamos wr/wl a los topicos reales del Puzzlebot.
     localisation = Node(
         package='puzzlebot_sim2',
@@ -104,6 +116,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_rviz', default_value='true'),
         DeclareLaunchArgument('nav', default_value='true'),
         robot_state_publisher,
+        laser_frame_alias,
         localisation,
         aruco_detector,
         bug_controller,
