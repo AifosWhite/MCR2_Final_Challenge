@@ -180,18 +180,19 @@ class VizDebug(Node):
         # Diametros 2-sigma, acotados: minimo 0.15 m (siempre visible aunque la
         # covarianza sea ~0 al estar bien localizado) y maximo 1.5 m (que no llene
         # la pantalla al derivar). Se sigue notando crecer/encoger entre esos limites.
-        major = float(np.clip(2.0 * k * np.sqrt(vals[1]), 0.20, 2.0))
-        minor = float(np.clip(2.0 * k * np.sqrt(vals[0]), 0.20, 2.0))
+        major = float(np.clip(2.0 * k * np.sqrt(vals[1]), 0.35, 2.0))
+        minor = float(np.clip(2.0 * k * np.sqrt(vals[0]), 0.35, 2.0))
         ell = new_marker('cov_ellipse', Marker.CYLINDER)
         ell.pose.position.x = self.x
         ell.pose.position.y = self.y
-        ell.pose.position.z = 0.03
+        # FLOTA por encima del robot (z=0.25) para que el modelo del robot no la tape.
+        ell.pose.position.z = 0.25
         ell.pose.orientation.z = float(np.sin(ang / 2.0))
         ell.pose.orientation.w = float(np.cos(ang / 2.0))
         ell.scale.x = major
         ell.scale.y = minor
-        ell.scale.z = 0.03
-        ell.color = ColorRGBA(r=1.0, g=0.85, b=0.0, a=0.55)
+        ell.scale.z = 0.02
+        ell.color = ColorRGBA(r=1.0, g=0.85, b=0.0, a=0.7)
         arr.markers.append(ell)
 
         # --- Trayectoria: linea ---
