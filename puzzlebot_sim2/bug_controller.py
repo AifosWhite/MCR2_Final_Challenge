@@ -89,6 +89,11 @@ class BugController(Node):
         self.declare_parameter('target_open_angle', 0.5)
         self.declare_parameter('controller_type', 'BUG2')
         self.declare_parameter('overwrite_min_max_angles', False)  # True en fisico
+        # Angulo (rad) del scan que apunta al FRENTE real del robot. Si el rplidar
+        # esta montado girado, las regiones front/side/target quedan desalineadas
+        # (p.ej. lee la pared de atras como "frente"). Calibra: 0 si el 0 del scan
+        # mira al frente; ~3.14159 si mira hacia atras.
+        self.declare_parameter('lidar_yaw_offset', 3.14159)
 
         # Modo lista de waypoints (si vacio, espera setpoints por topico).
         self.declare_parameter('waypoints_x', DEFAULT_WAYPOINTS_X)
@@ -120,6 +125,7 @@ class BugController(Node):
         self.target_open_angle = float(gp('target_open_angle').value)
         self.controller_type = str(gp('controller_type').value)
         self.using_real_robot = bool(gp('overwrite_min_max_angles').value)
+        self.lidar_yaw_offset = float(gp('lidar_yaw_offset').value)
         self.loop = bool(gp('loop').value)
         odom_topic = str(gp('odom_topic').value)
         scan_topic = str(gp('scan_topic').value)
@@ -213,32 +219,38 @@ class BugController(Node):
             msg.angle_min = 0.0
             msg.angle_max = 2.0 * math.pi
         ranges = np.array(msg.ranges)
+        # Angulo del obstaculo mas cercano, en frame del ROBOT (resta el offset de montaje).
         self.closest_object_angle = norm_angle(
-            msg.angle_min + np.argmin(ranges) * msg.angle_increment)
+            msg.angle_min + np.argmin(ranges) * msg.angle_increment
+            - self.lidar_yaw_offset)
         self.lidar_min_range = msg.range_min
 
+        # eff_offset alinea TODAS las regiones (front/side/target) con el frente real:
+        # el centro efectivo de cada region es (center - eff_offset) = angulo_robot + lidar_yaw_offset.
+        eff_offset = msg.angle_min - self.lidar_yaw_offset
+
         theta_err = angle_between_poses(self.robot_pose, self.robot_setpoint)
-        min_target = self._region_min(ranges, theta_err, msg.angle_min,
+        min_target = self._region_min(ranges, theta_err, eff_offset,
                                       self.target_open_angle,
                                       self.target_open_angle,
                                       msg.angle_increment, msg.range_min)
 
         side_c = self._side_center(self.fw_dir, msg.angle_min)
-        self.min_side = self._region_min(ranges, side_c, msg.angle_min,
+        self.min_side = self._region_min(ranges, side_c, eff_offset,
                                          self.side_open_angle,
                                          self.side_open_angle,
                                          msg.angle_increment, msg.range_min)
         front_c = -msg.angle_min
-        self.min_front = self._region_min(ranges, front_c, msg.angle_min,
+        self.min_front = self._region_min(ranges, front_c, eff_offset,
                                           self.front_open_angle,
                                           self.front_open_angle,
                                           msg.angle_increment, msg.range_min)
-        self.min_back_side = self._region_min(ranges, side_c, msg.angle_min,
+        self.min_back_side = self._region_min(ranges, side_c, eff_offset,
                                               self.side_open_angle * 0.5,
                                               self.side_open_angle,
                                               msg.angle_increment, msg.range_min)
         self.min_back_side_out = self._region_min_outside(
-            ranges, side_c, msg.angle_min, self.side_open_angle * 0.5,
+            ranges, side_c, eff_offset, self.side_open_angle * 0.5,
             self.side_open_angle, msg.angle_increment, msg.range_min)
 
         # Maquina de estados de modo
