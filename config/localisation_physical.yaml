@@ -14,7 +14,7 @@ localisation:
     theta0: 0.0
     update_rate: 50.0
     wheel_radius: 0.05
-    wheel_base: 0.19
+    wheel_base: 0.18
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
@@ -23,7 +23,7 @@ localisation:
     kl: 0.002
     use_ekf: true
     use_ground_truth_pose: false
-    ekf_r_dist: 0.05
+    ekf_r_dist: 0.10
     ekf_r_bearing: 0.05
     # --- Posiciones GLOBALES de los marcadores (centímetros -> metros) ---
     # Origen (0,0) = esquina inferior-izquierda.
@@ -35,7 +35,7 @@ localisation:
 
 aruco_detector:
   ros__parameters:
-    marker_size_m: 0.094            # marcador impreso real 9.4 cm
+    marker_size_m: 0.096            # marcador impreso real medido 9.6 cm
     image_topic: "/video_source/raw"
     aruco_dictionary: "DICT_ARUCO_ORIGINAL"   # "Original ArUco" del generador
     use_tf: false                  # pon true si tienes TF camara->base estable
