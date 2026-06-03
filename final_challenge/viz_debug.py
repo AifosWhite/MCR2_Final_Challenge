@@ -185,14 +185,13 @@ class VizDebug(Node):
         ell = new_marker('cov_ellipse', Marker.CYLINDER)
         ell.pose.position.x = self.x
         ell.pose.position.y = self.y
-        # FLOTA por encima del robot (z=0.25) para que el modelo del robot no la tape.
-        ell.pose.position.z = 0.25
+        ell.pose.position.z = 0.01
         ell.pose.orientation.z = float(np.sin(ang / 2.0))
         ell.pose.orientation.w = float(np.cos(ang / 2.0))
         ell.scale.x = major
         ell.scale.y = minor
-        ell.scale.z = 0.02
-        ell.color = ColorRGBA(r=1.0, g=0.85, b=0.0, a=0.7)
+        ell.scale.z = 0.01
+        ell.color = ColorRGBA(r=0.6, g=0.0, b=1.0, a=0.5)
         arr.markers.append(ell)
 
         # --- Trayectoria: linea ---

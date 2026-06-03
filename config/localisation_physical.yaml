@@ -1,4 +1,4 @@
-}# Config de localizacion para el Puzzlebot FISICO.
+# Config de localizacion para el Puzzlebot FISICO.
 # Aplica a los nodos: localisation (EKF) y aruco_detector (detector fisico).
 #
 # SISTEMA DE COORDENADAS: origen (0,0) = esquina inferior-izquierda del laberinto.
