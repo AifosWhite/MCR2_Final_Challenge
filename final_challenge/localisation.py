@@ -5,10 +5,12 @@ import rclpy
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32, Float32MultiArray
 from rclpy.qos import qos_profile_sensor_data
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 
 
 def yaw_to_quat(yaw):
@@ -67,6 +69,7 @@ class Localisation(Node):
         self.wl = 0.0
         self.sigma = np.zeros((3, 3))
         self.latest_detection = None
+        self.latest_scan = None
         self.latest_ground_truth = None
         self.prev_ns = self.get_clock().now().nanoseconds
 
@@ -76,12 +79,14 @@ class Localisation(Node):
         self.create_subscription(Float32, 'wl', self.wl_callback, qos_profile_sensor_data)
         self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
         self.create_subscription(Odometry, '/ground_truth', self.ground_truth_callback, 10)
+        self.create_subscription(LaserScan, 'scan', self.scan_callback, qos_profile_sensor_data)
         # Publicar odom con QoS RELIABLE (default). Un publicador RELIABLE es
         # compatible con suscriptores BEST_EFFORT (bug_controller, viz_debug) Y con
         # los RELIABLE (display Odometry de RViz). Con BEST_EFFORT, RViz no recibia
         # /odom y no podia dibujar la elipse de covarianza nativa.
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.cov_marker_pub = self.create_publisher(Marker, 'covariance_ellipse', 10)
+        self.lidar_marker_pub = self.create_publisher(Marker, 'lidar_fov', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_broadcaster = StaticTransformBroadcaster(self)
 
@@ -106,6 +111,9 @@ class Localisation(Node):
     def aruco_callback(self, msg):
         if len(msg.data) >= 3:
             self.latest_detection = int(msg.data[0]), float(msg.data[1]), float(msg.data[2])
+
+    def scan_callback(self, msg):
+        self.latest_scan = msg
 
     def ground_truth_callback(self, msg):
         q = msg.pose.pose.orientation
@@ -217,6 +225,7 @@ class Localisation(Node):
         odom.pose.covariance = self.pack_covariance()
         self.odom_pub.publish(odom)
         self.publish_covariance_ellipse(now)
+        self.publish_lidar_fov(now)
 
         tf = TransformStamped()
         tf.header = odom.header
@@ -228,6 +237,45 @@ class Localisation(Node):
         tf.transform.rotation.y = float(q[2])
         tf.transform.rotation.z = float(q[3])
         self.tf_broadcaster.sendTransform(tf)
+
+    def publish_lidar_fov(self, stamp):
+        if self.latest_scan is None:
+            return
+        scan = self.latest_scan
+        origin = Point(x=float(self.x), y=float(self.y), z=0.01)
+        triangles = []
+        for i in range(len(scan.ranges) - 1):
+            r0 = scan.ranges[i]
+            r1 = scan.ranges[i + 1]
+            if not (scan.range_min < r0 < scan.range_max):
+                continue
+            if not (scan.range_min < r1 < scan.range_max):
+                continue
+            a0 = self.theta + scan.angle_min + i * scan.angle_increment
+            a1 = a0 + scan.angle_increment
+            p0 = Point(x=float(self.x + r0 * math.cos(a0)),
+                       y=float(self.y + r0 * math.sin(a0)), z=0.01)
+            p1 = Point(x=float(self.x + r1 * math.cos(a1)),
+                       y=float(self.y + r1 * math.sin(a1)), z=0.01)
+            triangles += [origin, p0, p1]
+
+        m = Marker()
+        m.header.stamp = stamp
+        m.header.frame_id = self.odom_frame
+        m.ns = 'lidar_fov'
+        m.id = 0
+        m.type = Marker.TRIANGLE_LIST
+        m.action = Marker.ADD
+        m.pose.orientation.w = 1.0
+        m.scale.x = 1.0
+        m.scale.y = 1.0
+        m.scale.z = 1.0
+        m.color.a = 0.35
+        m.color.r = 1.0
+        m.color.g = 0.85
+        m.color.b = 0.0
+        m.points = triangles
+        self.lidar_marker_pub.publish(m)
 
     def publish_covariance_ellipse(self, stamp):
         cov_2d = self.sigma[:2, :2]
