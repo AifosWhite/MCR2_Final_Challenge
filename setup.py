@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = 'puzzlebot_sim2'
+package_name = 'final_challenge'
 
 
 def package_files(directory):
@@ -16,7 +16,7 @@ def package_files(directory):
 setup(
     name=package_name,
     version='0.1.0',
-    packages=[package_name],
+    packages=['final_challenge'],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
@@ -25,6 +25,7 @@ setup(
         (os.path.join('share', package_name, 'rviz'), glob(os.path.join('rviz', '*.rviz'))),
         *package_files('meshes'),
         *package_files('urdf'),
+        *package_files('worlds'),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -35,10 +36,14 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'localisation = puzzlebot_sim2.localisation:main',
-            'bug_controller = puzzlebot_sim2.bug_controller:main',
-            'aruco_detector_physical = puzzlebot_sim2.aruco_detector_physical:main',
-            'viz_debug = puzzlebot_sim2.viz_debug:main',
+            'localisation = final_challenge.localisation:main',
+            'bug_controller = final_challenge.bug_controller:main',
+            'aruco_detector_physical = final_challenge.aruco_detector_physical:main',
+            'viz_debug = final_challenge.viz_debug:main',
+            'simulator = final_challenge.simulator:main',
+            'sim_lidar_node = final_challenge.sim_lidar_node:main',
+            'sim_aruco_node = final_challenge.sim_aruco_node:main',
+            
         ],
     },
 )
