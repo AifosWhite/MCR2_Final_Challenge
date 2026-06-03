@@ -24,16 +24,16 @@ bug_controller:
     # Bajados para la demo de PASILLO LIBRE (Opcion A): el giro de 180 y el regreso
     # no disparan wall-following por las paredes laterales (~0.40 m). Para el maze
     # COMPLETO (rodear paredes) subir de nuevo a ~0.25/0.30.
-    following_walls_distance: 0.16
-    front_stop_distance: 0.20
+    following_walls_distance: 0.25
+    front_stop_distance: 0.30
     lookahead_distance: 0.30
-    # Suavizado del seguir-pared: fw_e_Kp alto saturaba w (giros a tirones);
+    # Suavizado del seguir-pared: fw_ e_Kp alto saturaba w (giros a tirones);
     # corner_angular > w_max hacia esquinas bruscas.
     fw_w_Kp: 1.0
     fw_e_Kp: 3.5
-    fw_linear_speed: 0.10
+    fw_linear_speed: 0.12
     fw_outer_corner_angular_speed: 1.2
-    fw_outer_corner_linear_speed: 0.15
+    fw_outer_corner_linear_speed: 0.16
 
     # Aperturas angulares de las regiones del LiDAR (rad)
     side_open_angle: 0.5236
@@ -43,7 +43,7 @@ bug_controller:
     # Offset de montaje del LiDAR (rad): angulo del scan que mira al FRENTE del robot.
     # Si al arrancar lee la pared de ATRAS como "front" y se mete a wall-following,
     # el LiDAR esta girado ~180 deg -> usa 3.14159. Calibra viendo /scan en RViz.
-    lidar_yaw_offset: 0.0
+    lidar_yaw_offset: 3.14159
 
     # === OPCION A: ruta corta SEGURA (primera prueba real) ===
     # Ida y vuelta por el pasillo IZQUIERDO (libre desde el inicio), frame esquina:
