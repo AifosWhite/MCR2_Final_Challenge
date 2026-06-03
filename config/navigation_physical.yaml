@@ -43,7 +43,7 @@ bug_controller:
     # Offset de montaje del LiDAR (rad): angulo del scan que mira al FRENTE del robot.
     # Si al arrancar lee la pared de ATRAS como "front" y se mete a wall-following,
     # el LiDAR esta girado ~180 deg -> usa 3.14159. Calibra viendo /scan en RViz.
-    lidar_yaw_offset: 3.14159
+    lidar_yaw_offset: 0.0
 
     # === OPCION A: ruta corta SEGURA (primera prueba real) ===
     # Ida y vuelta por el pasillo IZQUIERDO (libre desde el inicio), frame esquina:
