@@ -24,7 +24,7 @@ def generate_launch_description():
       odom + scan --> bug_controller ----> cmd_vel
       xacro    --> robot_state_publisher -> TF de los links --> RViz
     """
-    pkg = get_package_share_directory('puzzlebot_sim2')
+    pkg = get_package_share_directory('final_challenge')
     loc_params = os.path.join(pkg, 'config', 'localisation_physical.yaml')
     nav_params = os.path.join(pkg, 'config', 'navigation_physical.yaml')
     xacro_file = os.path.join(pkg, 'urdf', 'mcr2_robots',
@@ -61,7 +61,7 @@ def generate_launch_description():
 
     # EKF / localizacion. Remapeamos wr/wl a los topicos reales del Puzzlebot.
     localisation = Node(
-        package='puzzlebot_sim2',
+        package='final_challenge',
         executable='localisation',
         name='localisation',
         output='screen',
@@ -74,7 +74,7 @@ def generate_launch_description():
 
     # Detector ArUco fisico (publica /aruco/detections para el EKF).
     aruco_detector = Node(
-        package='puzzlebot_sim2',
+        package='final_challenge',
         executable='aruco_detector_physical',
         name='aruco_detector',
         output='screen',
@@ -85,7 +85,7 @@ def generate_launch_description():
     # Se puede apagar con nav:=false para probar SOLO localizacion.
     bug_controller = Node(
         condition=IfCondition(use_nav),
-        package='puzzlebot_sim2',
+        package='final_challenge',
         executable='bug_controller',
         name='bug_controller',
         output='screen',
@@ -95,7 +95,7 @@ def generate_launch_description():
     # Visualizacion de depuracion: markers de mapa/pose/lectura de ArUco + logs.
     viz_debug = Node(
         condition=IfCondition(use_rviz),
-        package='puzzlebot_sim2',
+        package='final_challenge',
         executable='viz_debug',
         name='viz_debug',
         output='screen',
