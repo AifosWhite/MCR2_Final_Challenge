@@ -27,6 +27,9 @@ bug_controller:
     following_walls_distance: 0.25
     front_stop_distance: 0.30
     lookahead_distance: 0.30
+
+    bug2_line_tol: 0.30
+    min_wall_follow_distance: 0.25
     # Suavizado del seguir-pared: fw_ e_Kp alto saturaba w (giros a tirones);
     # corner_angular > w_max hacia esquinas bruscas.
     fw_w_Kp: 1.0

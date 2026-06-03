@@ -14,17 +14,17 @@ localisation:
     theta0: 0.0
     update_rate: 50.0
     wheel_radius: 0.05
-    wheel_base: 0.18
+    wheel_base: 0.19
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
     # Ruido de encoders (propagacion de covarianza por rueda).
-    kr: 0.002
-    kl: 0.002
+    kr: 0.008
+    kl: 0.008
     use_ekf: true
     use_ground_truth_pose: false
-    ekf_r_dist: 0.10
-    ekf_r_bearing: 0.05
+    ekf_r_dist: 0.03
+    ekf_r_bearing: 0.02
     # --- Posiciones GLOBALES de los marcadores (centímetros -> metros) ---
     # Origen (0,0) = esquina inferior-izquierda.
     # x crece hacia arriba, y crece hacia la izquierda (negativo hacia la derecha).

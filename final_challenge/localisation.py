@@ -147,6 +147,10 @@ class Localisation(Node):
         ])
         wheel_noise = np.diag([self.kr * abs(self.wr), self.kl * abs(self.wl)])
         self.sigma = h @ self.sigma @ h.T + grad @ wheel_noise @ grad.T
+        
+        self.sigma[0, 0] = max(self.sigma[0, 0], 0.005)
+        self.sigma[1, 1] = max(self.sigma[1, 1], 0.005)
+        self.sigma[2, 2] = max(self.sigma[2, 2], 0.002)
 
         self.x += v * c * dt
         self.y += v * s * dt
