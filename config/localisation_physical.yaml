@@ -60,6 +60,9 @@ viz_debug:
   ros__parameters:
     frame_id: "odom"
     err_log_threshold: 0.15        # solo loguea si el error de localiz. supera esto (m)
+    #marker_ids:   [70]
+    #marker_pos_x: [0.644]
+    #marker_pos_y: [-0.500]
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
     marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
     marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
