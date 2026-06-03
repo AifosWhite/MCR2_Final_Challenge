@@ -1,0 +1,68 @@
+# Config de localizacion para el Puzzlebot FISICO.
+# Aplica a los nodos: localisation (EKF) y aruco_detector (detector fisico).
+#
+# SISTEMA DE COORDENADAS: origen (0,0) = esquina inferior-izquierda del laberinto.
+# +x crece hacia arriba del mapa. y es negativo hacia la derecha.
+# Todo en METROS. Coordenadas globales desde tabla de medidas en cm.
+
+localisation:
+  ros__parameters:
+    # Pose inicial del CENTRO del robot.
+    # Medidas: x=32.5cm, y=-28cm -> x0=0.325m, y0=-0.28m, theta0=0 (mirando +x arriba).
+    x0: 0.325
+    y0: -0.28
+    theta0: 0.0
+    update_rate: 50.0
+    wheel_radius: 0.05
+    wheel_base: 0.18
+    world_frame: "map"
+    odom_frame: "odom"
+    base_frame: "base_footprint"
+    # Ruido de encoders (propagacion de covarianza por rueda).
+    kr: 0.002
+    kl: 0.002
+    use_ekf: true
+    use_ground_truth_pose: false
+    ekf_r_dist: 0.10
+    ekf_r_bearing: 0.05
+    # --- Posiciones GLOBALES de los marcadores (centímetros -> metros) ---
+    # Origen (0,0) = esquina inferior-izquierda.
+    # x crece hacia arriba, y crece hacia la izquierda (negativo hacia la derecha).
+    # Usa 701 P2 en posición (282, 0) cm.
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
+    marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
+    marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
+
+aruco_detector:
+  ros__parameters:
+    marker_size_m: 0.094            # marcador impreso real medido 9.6 cm
+    image_topic: "/video_source/raw"
+    aruco_dictionary: "DICT_ARUCO_ORIGINAL"   # "Original ArUco" del generador
+    use_tf: false                  # pon true si tienes TF camara->base estable
+    camera_optical_frame: "camera_link_optical"
+    base_frame: "base_footprint"
+    # === CALIBRACION REAL DE TU CAMARA (320x240, camera_calibration ROS) ===
+    # IMPORTANTE: esta matriz es para imagenes de 320x240. La camara DEBE
+    # publicar a esa misma resolucion durante la corrida, o las distancias
+    # saldran escaladas. Verifica width/height de /video_source/raw.
+    # Formato camera_matrix: [fx, 0, cx, 0, fy, cy, 0, 0, 1]
+    camera_matrix: [196.58361, 0.0,       166.15475,
+                    0.0,       261.19619, 68.40949,
+                    0.0,       0.0,       1.0]
+    camera_distortion: [-0.379059, 0.152931, 0.005085, 0.000654, 0.000000]
+    use_tvec_z_correction: false
+    tvec_z_scale: 0.676
+    tvec_z_bias: 0.00795
+
+# Visualizacion de depuracion en RViz (nodo viz_debug). Mismo mapa de
+# marcadores que el EKF (consistente con la seccion localisation de arriba).
+viz_debug:
+  ros__parameters:
+    frame_id: "odom"
+    err_log_threshold: 0.15        # solo loguea si el error de localiz. supera esto (m)
+    #marker_ids:   [70]
+    #marker_pos_x: [0.644]
+    #marker_pos_y: [-0.500]
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
+    marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
+    marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]

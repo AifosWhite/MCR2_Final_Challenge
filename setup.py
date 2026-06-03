@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = 'puzzlebot_sim2'
+package_name = 'final_challenge'
 
 
 def package_files(directory):
@@ -16,17 +16,16 @@ def package_files(directory):
 setup(
     name=package_name,
     version='0.1.0',
-    packages=[package_name],
+    packages=['final_challenge'],
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
         (os.path.join('share', package_name, 'config'), glob(os.path.join('config', '*.[yma]*'))),
         (os.path.join('share', package_name, 'rviz'), glob(os.path.join('rviz', '*.rviz'))),
-        (os.path.join('share', package_name, 'worlds'), glob(os.path.join('worlds', '*.world'))),
-        *package_files('worlds/aruco_textures'),
         *package_files('meshes'),
         *package_files('urdf'),
+        *package_files('worlds'),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -37,17 +36,16 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'simulator = puzzlebot_sim2.simulator:main',
-            'sim_lidar_node = puzzlebot_sim2.sim_lidar_node:main',
-            'sim_aruco_node = puzzlebot_sim2.sim_aruco_node:main',
-            'localisation = puzzlebot_sim2.localisation:main',
-            'reactive_navigation_node = puzzlebot_sim2.reactive_navigation_node:main',
-            'visualization_node = puzzlebot_sim2.visualization_node:main',
-            'aruco_detector = puzzlebot_sim2.aruco_detector:main',
-            'aruco_marker_bridge = puzzlebot_sim2.aruco_marker_bridge:main',
-            'joint_states = puzzlebot_sim2.joint_states:main',
-            'scan_timestamp_node = puzzlebot_sim2.scan_timestamp_node:main',
-            'jetson_aruco_adapter = puzzlebot_sim2.jetson_aruco_adapter:main',
+            'jetson_aruco_adapter = final_challenge.jetson_aruco_adapter:main',
+
+            'localisation = final_challenge.localisation:main',
+            'bug_controller = final_challenge.bug_controller:main',
+            'aruco_detector_physical = final_challenge.aruco_detector_physical:main',
+            'viz_debug = final_challenge.viz_debug:main',
+            'simulator = final_challenge.simulator:main',
+            'sim_lidar_node = final_challenge.sim_lidar_node:main',
+            'sim_aruco_node = final_challenge.sim_aruco_node:main',
+            
         ],
     },
 )

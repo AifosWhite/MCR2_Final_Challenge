@@ -4,13 +4,13 @@
 <xacro:arg name="prefix" default=""/>
 
 <!-- files for gazebo costumization -->
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_mechanical/puzzlebot_hacker_base.urdf.xacro"/>
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_robots/hacker_ed/parameters_hacker_ed.xacro" />
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_misc/materials.xacro" />
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_misc/macros.xacro" />
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_mechanical/puzzlebot_hacker_base.urdf.xacro"/>
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_robots/hacker_ed/parameters_hacker_ed.xacro" />
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_misc/materials.xacro" />
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_misc/macros.xacro" />
 
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_sensors/laser_camera_bracket.xacro" />
-<xacro:include filename="$(find puzzlebot_sim2)/urdf/mcr2_control/gazebo_control.xacro" />
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_sensors/laser_camera_bracket.xacro" />
+<xacro:include filename="$(find final_challenge)/urdf/mcr2_control/gazebo_control.xacro" />
 
 <!--LINKS-->
 

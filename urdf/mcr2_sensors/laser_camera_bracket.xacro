@@ -7,7 +7,7 @@
     prefix:=''
     camera_name:='cam_1'
     parent:='base_link'
-    mesh_file:='file://$(find puzzlebot_sim2)/meshes/sensors/Laser_Camera_Bracket.stl'
+    mesh_file:='file://$(find final_challenge)/meshes/sensors/Laser_Camera_Bracket.stl'
     
     camera_base_mass:='0.035'
     camera_base_length:='0.046'

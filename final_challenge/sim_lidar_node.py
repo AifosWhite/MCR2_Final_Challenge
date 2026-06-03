@@ -37,14 +37,20 @@ class SimLidar(Node):
         self.declare_parameter('range_max', 3.0)
         self.declare_parameter('angle_min', -math.pi)
         self.declare_parameter('angle_max', math.pi)
-        self.declare_parameter('samples', 181)
+        self.declare_parameter('samples', 360)
         self.declare_parameter('update_rate', 10.0)
+        self.declare_parameter('use_physical_frame', True)
+        self.declare_parameter('map_width_m', 3.05)
+        self.declare_parameter('map_height_m', 3.075)
 
         self.range_max = float(self.get_parameter('range_max').value)
         self.angle_min = float(self.get_parameter('angle_min').value)
         self.angle_max = float(self.get_parameter('angle_max').value)
         self.samples = int(self.get_parameter('samples').value)
         self.angle_increment = (self.angle_max - self.angle_min) / (self.samples - 1)
+        self.use_physical_frame = bool(self.get_parameter('use_physical_frame').value)
+        self.map_width_m = float(self.get_parameter('map_width_m').value)
+        self.map_height_m = float(self.get_parameter('map_height_m').value)
         self.walls = self.load_walls(str(self.get_parameter('world_file').value))
         self.x = 0.0
         self.y = 0.0
@@ -55,7 +61,10 @@ class SimLidar(Node):
         self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
         self.create_timer(1.0 / float(self.get_parameter('update_rate').value), self.publish_scan)
         self.create_timer(1.0, self.publish_walls)
-        self.get_logger().info(f'LiDAR simulado listo: publica /scan con {len(self.walls)} paredes.')
+        frame_name = 'fisico esquina' if self.use_physical_frame else 'Gazebo centrado'
+        self.get_logger().info(
+            f'LiDAR simulado listo: publica /scan con {len(self.walls)} paredes '
+            f'en frame {frame_name}.')
 
     def odom_callback(self, msg):
         self.x = float(msg.pose.pose.position.x)
@@ -146,13 +155,13 @@ class SimLidar(Node):
 
     def load_walls(self, world_file):
         if not world_file:
-            return WALLS
+            return self._fallback_walls()
 
         try:
             root = ET.parse(world_file).getroot()
         except (OSError, ET.ParseError) as exc:
             self.get_logger().warn(f'No pude leer {world_file}; uso paredes fallback. {exc}')
-            return WALLS
+            return self._fallback_walls()
 
         map_model = None
         for model in root.findall('.//model'):
@@ -160,11 +169,11 @@ class SimLidar(Node):
                 map_model = model
                 break
         if map_model is None:
-            return WALLS
+            return self._fallback_walls()
 
         model_pose = self.parse_pose(map_model.findtext('pose'))
         walls = []
-        for link in map_model.findall('link'):
+        for link in map_model.findall('.//link'):
             collision = link.find('collision')
             if collision is None:
                 continue
@@ -178,9 +187,28 @@ class SimLidar(Node):
 
             link_pose = self.parse_pose(link.findtext('pose'))
             wx, wy, wyaw = self.compose_pose(model_pose, link_pose)
+            if self.use_physical_frame:
+                wx, wy, wyaw = self.centered_to_physical(wx, wy, wyaw)
             walls.append((wx, wy, size[0], size[1], wyaw))
 
-        return walls if walls else WALLS
+        if walls:
+            return walls
+        return self._fallback_walls()
+
+    def _fallback_walls(self):
+        if self.use_physical_frame:
+            converted = []
+            for cx, cy, sx, sy, yaw in WALLS:
+                wx, wy, wyaw = self.centered_to_physical(cx, cy, yaw)
+                converted.append((wx, wy, sx, sy, wyaw))
+            return converted
+        return WALLS
+
+    def centered_to_physical(self, x, y, yaw):
+        physical_x = y + self.map_height_m / 2.0
+        physical_y = -(x + self.map_width_m / 2.0)
+        physical_yaw = math.atan2(-math.cos(yaw), math.sin(yaw))
+        return physical_x, physical_y, physical_yaw
 
     def parse_pose(self, text):
         if not text:

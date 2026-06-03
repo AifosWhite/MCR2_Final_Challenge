@@ -5,8 +5,12 @@ import rclpy
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32, Float32MultiArray
+from rclpy.qos import qos_profile_sensor_data
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 
 
 def yaw_to_quat(yaw):
@@ -32,9 +36,9 @@ class Localisation(Node):
         self.declare_parameter('ekf_r_dist', 0.05)
         self.declare_parameter('ekf_r_bearing', 0.05)
         self.declare_parameter('use_ground_truth_pose', False)
-        self.declare_parameter('marker_ids', [705, 706, 70, 703, 708, 75, 702])
-        self.declare_parameter('marker_pos_x', [-0.500, -0.500, -1.300, 0.400, -0.350, 0.800, 0.300])
-        self.declare_parameter('marker_pos_y', [-0.880, 0.820, 0.200, -0.280, -0.250, 1.120, -1.150])
+        self.declare_parameter('marker_ids', [70, 75, 701, 702, 703, 705, 706, 708])
+        self.declare_parameter('marker_pos_x', [1.85, 2.75, 2.82, 0.27, 1.24, 0.89, 2.455, 1.185])
+        self.declare_parameter('marker_pos_y', [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21])
 
         self.r = float(self.get_parameter('wheel_radius').value)
         self.L = float(self.get_parameter('wheel_base').value)
@@ -65,13 +69,24 @@ class Localisation(Node):
         self.wl = 0.0
         self.sigma = np.zeros((3, 3))
         self.latest_detection = None
+        self.latest_scan = None
         self.latest_ground_truth = None
+        self.prev_ns = self.get_clock().now().nanoseconds
 
-        self.create_subscription(Float32, 'wr', self.wr_callback, 10)
-        self.create_subscription(Float32, 'wl', self.wl_callback, 10)
+        # Encoders del Puzzlebot fisico publican con QoS de sensor (BEST_EFFORT).
+        # Hay que igualarlo o no se reciben mensajes (incompatible QoS).
+        self.create_subscription(Float32, 'wr', self.wr_callback, qos_profile_sensor_data)
+        self.create_subscription(Float32, 'wl', self.wl_callback, qos_profile_sensor_data)
         self.create_subscription(Float32MultiArray, '/aruco/detections', self.aruco_callback, 10)
         self.create_subscription(Odometry, '/ground_truth', self.ground_truth_callback, 10)
+        self.create_subscription(LaserScan, 'scan', self.scan_callback, qos_profile_sensor_data)
+        # Publicar odom con QoS RELIABLE (default). Un publicador RELIABLE es
+        # compatible con suscriptores BEST_EFFORT (bug_controller, viz_debug) Y con
+        # los RELIABLE (display Odometry de RViz). Con BEST_EFFORT, RViz no recibia
+        # /odom y no podia dibujar la elipse de covarianza nativa.
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
+        self.cov_marker_pub = self.create_publisher(Marker, 'covariance_ellipse', 10)
+        self.lidar_marker_pub = self.create_publisher(Marker, 'lidar_fov', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_broadcaster = StaticTransformBroadcaster(self)
 
@@ -97,6 +112,9 @@ class Localisation(Node):
         if len(msg.data) >= 3:
             self.latest_detection = int(msg.data[0]), float(msg.data[1]), float(msg.data[2])
 
+    def scan_callback(self, msg):
+        self.latest_scan = msg
+
     def ground_truth_callback(self, msg):
         q = msg.pose.pose.orientation
         siny = 2.0 * (q.w * q.z + q.x * q.y)
@@ -108,17 +126,21 @@ class Localisation(Node):
         )
 
     def step(self):
+        now_ns = self.get_clock().now().nanoseconds
+        dt = max((now_ns - self.prev_ns) * 1e-9, 1e-6)
+        self.prev_ns = now_ns
+
         v = self.r * (self.wr + self.wl) / 2.0
         w = self.r * (self.wr - self.wl) / self.L
         c = math.cos(self.theta)
         s = math.sin(self.theta)
 
         h = np.array([
-            [1.0, 0.0, -v * self.dt * s],
-            [0.0, 1.0, v * self.dt * c],
+            [1.0, 0.0, -v * dt * s],
+            [0.0, 1.0, v * dt * c],
             [0.0, 0.0, 1.0],
         ])
-        grad = 0.5 * self.r * self.dt * np.array([
+        grad = 0.5 * self.r * dt * np.array([
             [c, c],
             [s, s],
             [2.0 / self.L, -2.0 / self.L],
@@ -126,9 +148,9 @@ class Localisation(Node):
         wheel_noise = np.diag([self.kr * abs(self.wr), self.kl * abs(self.wl)])
         self.sigma = h @ self.sigma @ h.T + grad @ wheel_noise @ grad.T
 
-        self.x += v * c * self.dt
-        self.y += v * s * self.dt
-        self.theta += w * self.dt
+        self.x += v * c * dt
+        self.y += v * s * dt
+        self.theta += w * dt
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
 
         if self.use_ground_truth_pose and self.latest_ground_truth is not None:
@@ -176,11 +198,11 @@ class Localisation(Node):
         self.sigma = (np.eye(3) - k @ g) @ self.sigma
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
-        # Confirmacion de actualizacion de pose por ArUco: ID visto, pose conocida
-        # del marcador, pose estimada del robot y correccion aplicada (delta).
+        # Correccion ArUco aplicada
         self.get_logger().info(
-            f'ArUco {marker_id}: aruco=({mx:.2f}, {my:.2f}) '
-            f'pose_est=({self.x:.2f}, {self.y:.2f}, {math.degrees(self.theta):.0f} deg) '
+            f'ArUco {marker_id} | dist_real={z_dist:.3f} m  dist_estimada={expected_dist:.3f} m  '
+            f'error={z_dist - expected_dist:+.3f} m | '
+            f'pose_est=({self.x:.3f}, {self.y:.3f}, {math.degrees(self.theta):.1f} deg) '
             f'corr=({float(delta[0]):+.3f}, {float(delta[1]):+.3f})',
             throttle_duration_sec=0.5)
 
@@ -202,6 +224,8 @@ class Localisation(Node):
         odom.twist.twist.angular.z = float(w)
         odom.pose.covariance = self.pack_covariance()
         self.odom_pub.publish(odom)
+        self.publish_covariance_ellipse(now)
+        self.publish_lidar_fov(now)
 
         tf = TransformStamped()
         tf.header = odom.header
@@ -213,6 +237,74 @@ class Localisation(Node):
         tf.transform.rotation.y = float(q[2])
         tf.transform.rotation.z = float(q[3])
         self.tf_broadcaster.sendTransform(tf)
+
+    def publish_lidar_fov(self, stamp):
+        if self.latest_scan is None:
+            return
+        scan = self.latest_scan
+        origin = Point(x=float(self.x), y=float(self.y), z=0.01)
+        triangles = []
+        for i in range(len(scan.ranges) - 1):
+            r0 = scan.ranges[i]
+            r1 = scan.ranges[i + 1]
+            if not (scan.range_min < r0 < scan.range_max):
+                continue
+            if not (scan.range_min < r1 < scan.range_max):
+                continue
+            a0 = self.theta + scan.angle_min + i * scan.angle_increment
+            a1 = a0 + scan.angle_increment
+            p0 = Point(x=float(self.x + r0 * math.cos(a0)),
+                       y=float(self.y + r0 * math.sin(a0)), z=0.01)
+            p1 = Point(x=float(self.x + r1 * math.cos(a1)),
+                       y=float(self.y + r1 * math.sin(a1)), z=0.01)
+            triangles += [origin, p0, p1]
+
+        m = Marker()
+        m.header.stamp = stamp
+        m.header.frame_id = self.odom_frame
+        m.ns = 'lidar_fov'
+        m.id = 0
+        m.type = Marker.TRIANGLE_LIST
+        m.action = Marker.ADD
+        m.pose.orientation.w = 1.0
+        m.scale.x = 1.0
+        m.scale.y = 1.0
+        m.scale.z = 1.0
+        m.color.a = 0.35
+        m.color.r = 1.0
+        m.color.g = 0.85
+        m.color.b = 0.0
+        m.points = triangles
+        self.lidar_marker_pub.publish(m)
+
+    def publish_covariance_ellipse(self, stamp):
+        cov_2d = self.sigma[:2, :2]
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_2d)
+        # 2-sigma ellipse (95 % confianza en 2D: escala ~2.448, usamos 2 para visualización limpia)
+        scale_x = 2.0 * math.sqrt(max(float(eigenvalues[0]), 1e-9))
+        scale_y = 2.0 * math.sqrt(max(float(eigenvalues[1]), 1e-9))
+        angle = math.atan2(float(eigenvectors[1, 1]), float(eigenvectors[0, 1]))
+
+        m = Marker()
+        m.header.stamp = stamp
+        m.header.frame_id = self.odom_frame
+        m.ns = 'covariance'
+        m.id = 0
+        m.type = Marker.CYLINDER
+        m.action = Marker.ADD
+        m.pose.position.x = float(self.x)
+        m.pose.position.y = float(self.y)
+        m.pose.position.z = 0.0
+        m.pose.orientation.w = math.cos(angle / 2.0)
+        m.pose.orientation.z = math.sin(angle / 2.0)
+        m.scale.x = max(scale_x, 0.01)
+        m.scale.y = max(scale_y, 0.01)
+        m.scale.z = 0.01  # plano
+        m.color.a = 0.45
+        m.color.r = 0.55
+        m.color.g = 0.0
+        m.color.b = 0.85
+        self.cov_marker_pub.publish(m)
 
     def pack_covariance(self):
         cov = [0.0] * 36

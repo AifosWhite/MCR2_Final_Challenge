@@ -1,11 +1,11 @@
 localisation:
   ros__parameters:
-    x0: 1.20
-    y0: -1.00
-    theta0: 1.57
-    initial_x: 1.20
-    initial_y: -1.00
-    initial_theta: 1.57
+    x0: 0.28
+    y0: 0.325
+    theta0: 1.5708
+    initial_x: 0.28
+    initial_y: 0.325
+    initial_theta: 1.5708
     publish_map_odom_tf: true
     update_rate: 50.0
     wheel_radius: 0.05
@@ -18,8 +18,8 @@ localisation:
     use_ekf: true
     ekf_r_dist: 0.05
     ekf_r_bearing: 0.05
-    marker_size_m: 0.18
-    aruco_dictionary: "DICT_4X4_1000"
-    marker_ids:   [70,     706,    75,     701,    703,    705,    708,    702]
-    marker_pos_x: [-1.634, -0.972,  0.792,  1.634,  0.945, -0.109, -0.324,  0.303]
-    marker_pos_y: [ 0.224,  0.854,  1.621,  0.230, -0.354, -0.971, -0.370, -1.277]
+    marker_size_m: 0.14
+    aruco_dictionary: "DICT_ARUCO_ORIGINAL"
+    marker_ids:   [70,   75,   701,  702,  703,  705,  706,   708  ]
+    marker_pos_x: [0.30, 2.40, 0.00, 1.83, 2.07, 1.20, 1.255, 1.21 ]
+    marker_pos_y: [1.85, 2.75, 1.30, 0.27, 1.24, 0.89, 2.455, 1.185]

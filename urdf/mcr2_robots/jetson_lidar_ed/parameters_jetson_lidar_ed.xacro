@@ -193,9 +193,9 @@
 
 
     <!--Meshes -->
-        <xacro:property name="mesh_puzzlebot_chassis"  value="$(find puzzlebot_sim2)/meshes/bases/Puzzlebot_Jetson_Lidar_Edition_Base.stl" />
-        <xacro:property name="mesh_puzzlebot_wheel"  value="$(find puzzlebot_sim2)/meshes/wheels/Puzzlebot_Wheel.stl" />
-        <xacro:property name="mesh_puzzlebot_caster"  value="$(find puzzlebot_sim2)/meshes/wheels/Puzzlebot_Caster_Wheel.stl" /> 
-        <xacro:property name="mesh_puzzlebot_jetson"  value="$(find puzzlebot_sim2)/meshes/misc/NVIDIA_Jetson.stl" />
+        <xacro:property name="mesh_puzzlebot_chassis"  value="$(find final_challenge)/meshes/bases/Puzzlebot_Jetson_Lidar_Edition_Base.stl" />
+        <xacro:property name="mesh_puzzlebot_wheel"  value="$(find final_challenge)/meshes/wheels/Puzzlebot_Wheel.stl" />
+        <xacro:property name="mesh_puzzlebot_caster"  value="$(find final_challenge)/meshes/wheels/Puzzlebot_Caster_Wheel.stl" /> 
+        <xacro:property name="mesh_puzzlebot_jetson"  value="$(find final_challenge)/meshes/misc/NVIDIA_Jetson.stl" />
 
 </robot>
