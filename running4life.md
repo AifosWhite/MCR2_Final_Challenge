@@ -29,18 +29,18 @@ export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
 ```
 
-Si existe otro workspace con un paquete llamado `puzzlebot_sim2` (por ejemplo
+Si existe otro workspace con un paquete llamado `final_challenge` (por ejemplo
 `~/ros2_ws`) ya cargado en la terminal, abrir una terminal limpia antes de
 seguir. Después de hacer `source install/setup.bash` en este proyecto, validar:
 
 ```bash
-ros2 pkg prefix puzzlebot_sim2
+ros2 pkg prefix final_challenge
 ```
 
 Debe apuntar a:
 
 ```text
-/home/karinam/MCR2_Final_Challenge/install/puzzlebot_sim2
+/home/karinam/MCR2_Final_Challenge/install/final_challenge
 ```
 
 ---
@@ -50,7 +50,7 @@ Debe apuntar a:
 ## Terminal Jetson 1 — Cámara / ArUco base
 
 ```bash
-ssh puzzlebot@10.201.233.217
+ssh puzzlebot@10.42.162.217
 
 ```
 
@@ -83,7 +83,7 @@ ros2 topic list
 ## Terminal Jetson 2 — micro-ROS Agent
 
 ```bash
-ssh puzzlebot@10.201.233.217
+ssh puzzlebot@10.42.162.217
 
 ```
 
@@ -118,7 +118,7 @@ ros2 topic hz /VelocityEncL
 ## Terminal Jetson 3 — LiDAR
 
 ```bash
-ssh puzzlebot@10.201.233.217
+ssh puzzlebot@10.42.162.217
 
 ```
 
@@ -159,9 +159,9 @@ unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
 
-colcon build --packages-select puzzlebot_sim2
+colcon build --packages-select final_challenge
 source install/setup.bash
-ros2 pkg prefix puzzlebot_sim2
+ros2 pkg prefix final_challenge
 ```
 
 ## Comandos rápidos para correr el proyecto
@@ -175,14 +175,14 @@ unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
 
-colcon build --packages-select puzzlebot_sim2
+colcon build --packages-select final_challenge
 source install/setup.bash
 
 # Lanzar solo localización (sin navegación)
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=false use_rviz:=true --ros-args --log-level info
+ros2 launch final_challenge physical_challenge.launch.py nav:=false use_rviz:=true --ros-args --log-level info
 
 # Lanzar con navegación y RViz
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true --ros-args --log-level info
+ros2 launch final_challenge physical_challenge.launch.py nav:=true use_rviz:=true --ros-args --log-level info
 ```
 
 ---
@@ -192,7 +192,7 @@ ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true
 Antes de activar navegación, correr sin `bug_controller`:
 
 ```bash
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=false use_rviz:=true
+ros2 launch final_challenge physical_challenge.launch.py nav:=false use_rviz:=true
 ```
 
 En otra terminal:
@@ -345,10 +345,10 @@ unset RMW_IMPLEMENTATION
 export ROS_DOMAIN_ID=0
 export ROS_LOCALHOST_ONLY=0
 
-colcon build --packages-select puzzlebot_sim2
+colcon build --packages-select final_challenge
 source install/setup.bash
 
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true
+ros2 launch final_challenge physical_challenge.launch.py nav:=true use_rviz:=true
 ```
 
 ## 6.3 Verificar el pipeline ANTES de soltar el waypoint
@@ -450,9 +450,9 @@ robot, encoders llegan, `/scan` se ve en RViz. Luego:
 
 ```bash
 # rebuild si cambiaste configs
-cd ~/MCR2_Final_Challenge && colcon build --packages-select puzzlebot_sim2 && source install/setup.bash
+cd ~/MCR2_Final_Challenge && colcon build --packages-select final_challenge && source install/setup.bash
 
-ros2 launch puzzlebot_sim2 physical_challenge.launch.py nav:=true use_rviz:=true
+ros2 launch final_challenge physical_challenge.launch.py nav:=true use_rviz:=true
 ```
 
 En otra terminal:
