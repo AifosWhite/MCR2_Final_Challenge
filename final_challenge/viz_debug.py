@@ -19,6 +19,9 @@ Suscribe:
   /aruco/detections   (std_msgs/Float32MultiArray = [id, distance, bearing])
 """
 
+import signal
+import sys
+
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -71,10 +74,16 @@ class VizDebug(Node):
         self.create_subscription(Float32MultiArray, det_topic, self.det_cb, 10)
         self.pub = self.create_publisher(MarkerArray, '/localisation_markers', 10)
         self.create_timer(0.1, self.publish_markers)
+        signal.signal(signal.SIGINT, self.shutdown_function)
 
         self.get_logger().info(
             f'viz_debug listo: {len(self.markers_map)} marcadores en el mapa, '
             f'publica /localisation_markers en frame "{self.frame_id}".')
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down viz_debug node...')
+        rclpy.shutdown()
+        sys.exit(0)
 
     # ---- Callbacks --------------------------------------------------------
     def odom_cb(self, msg):

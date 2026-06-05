@@ -64,8 +64,8 @@ bug_controller:
 
     # Prueba 4: waypoint simple hacia +x.
     # Cuando esto funcione, regresar aqui la ruta completa del laberinto.
-    waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
-    waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]
-    loop: true
+    waypoints_x: [1.30, 2.82]
+    waypoints_y: [-0.30, -0.30]
+  
 
 

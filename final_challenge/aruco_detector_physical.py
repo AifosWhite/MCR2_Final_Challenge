@@ -20,6 +20,8 @@ porque tu EKF corrige con una sola observacion por paso.
 """
 
 import math
+import signal
+import sys
 
 import cv2
 import numpy as np
@@ -105,11 +107,17 @@ class ArucoDetectorPhysical(Node):
         self.latest_msg = None
         self._logged_encoding = False
         self.create_timer(0.05, self.timer_callback)
+        signal.signal(signal.SIGINT, self.shutdown_function)
 
         self.get_logger().info(
             f'aruco_detector (fisico) listo. Imagen={image_topic}, '
             f'dict={dict_name}, marker={self.marker_size} m, '
             f'use_tf={self.use_tf}.')
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down aruco_detector...')
+        rclpy.shutdown()
+        sys.exit(0)
 
     def image_callback(self, msg):
         self.latest_msg = msg

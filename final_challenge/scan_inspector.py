@@ -8,18 +8,27 @@ USO:
   2. Corre: python3 scan_inspector.py
   3. Lee el veredicto al final
 """
+import math
+import signal
+import sys
+
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
-import numpy as np
-import math
 
 class ScanInspector(Node):
     def __init__(self):
         super().__init__('scan_inspector')
         self.create_subscription(LaserScan, '/scan', self.cb, 10)
         self.done = False
+        signal.signal(signal.SIGINT, self.shutdown_function)
         self.get_logger().info("Esperando un mensaje de /scan...")
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down scan_inspector...')
+        rclpy.shutdown()
+        sys.exit(0)
 
     def cb(self, msg):
         if self.done:

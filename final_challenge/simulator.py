@@ -1,4 +1,6 @@
 import math
+import signal
+import sys
 
 import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
@@ -47,7 +49,13 @@ class PuzzlebotSimulator(Node):
         self.create_subscription(Twist, 'cmd_vel', self.cmd_callback, 10)
 
         self.create_timer(self.dt, self.step)
+        signal.signal(signal.SIGINT, self.shutdown_function)
         self.get_logger().info('Simulador listo: recibe /cmd_vel y publica /wr, /wl, /sim_pose.')
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down simulator...')
+        rclpy.shutdown()
+        sys.exit(0)
 
     def cmd_callback(self, msg):
         self.v_cmd = float(msg.linear.x)

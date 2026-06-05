@@ -19,12 +19,12 @@ localisation:
     odom_frame: "odom"
     base_frame: "base_footprint"
     # Ruido de encoders (propagacion de covarianza por rueda).
-    kr: 0.008
-    kl: 0.008
+    kr: 0.003
+    kl: 0.003
     use_ekf: true
     use_ground_truth_pose: false
-    ekf_r_dist: 0.03
-    ekf_r_bearing: 0.02
+    ekf_r_dist: 0.06
+    ekf_r_bearing: 0.20
     # --- Posiciones GLOBALES de los marcadores (centímetros -> metros) ---
     # Origen (0,0) = esquina inferior-izquierda.
     # x crece hacia arriba, y crece hacia la izquierda (negativo hacia la derecha).

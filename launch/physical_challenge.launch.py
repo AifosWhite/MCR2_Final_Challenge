@@ -33,6 +33,8 @@ def generate_launch_description():
 
     use_rviz = LaunchConfiguration('use_rviz')
     use_nav = LaunchConfiguration('nav')
+    initial_mode = LaunchConfiguration('initial_mode')
+    wall_side = LaunchConfiguration('wall_side')
     robot_desc = Command(['xacro ', xacro_file])
 
     # TF de los links del robot (en fisico: use_sim_time False).
@@ -89,7 +91,10 @@ def generate_launch_description():
         executable='bug_controller',
         name='bug_controller',
         output='screen',
-        parameters=[nav_params],
+        parameters=[nav_params, {
+            'initial_controller_mode': initial_mode,
+            'initial_wall_side': wall_side,
+        }],
     )
 
     # Visualizacion de depuracion: markers de mapa/pose/lectura de ArUco + logs.
@@ -115,6 +120,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_rviz', default_value='true'),
         DeclareLaunchArgument('nav', default_value='true'),
+        DeclareLaunchArgument('initial_mode', default_value='p2p_controller'),
+        DeclareLaunchArgument('wall_side', default_value='right'),
         robot_state_publisher,
         laser_frame_alias,
         localisation,

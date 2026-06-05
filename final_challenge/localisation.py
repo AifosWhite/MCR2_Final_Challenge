@@ -1,4 +1,6 @@
 import math
+import signal
+import sys
 
 import numpy as np
 import rclpy
@@ -92,7 +94,13 @@ class Localisation(Node):
 
         self.publish_static_tf()
         self.create_timer(self.dt, self.step)
+        signal.signal(signal.SIGINT, self.shutdown_function)
         self.get_logger().info('Localisation lista: dead reckoning con correccion ArUco opcional.')
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down localisation node...')
+        rclpy.shutdown()
+        sys.exit(0)
 
     def publish_static_tf(self):
         tf = TransformStamped()
@@ -148,9 +156,9 @@ class Localisation(Node):
         wheel_noise = np.diag([self.kr * abs(self.wr), self.kl * abs(self.wl)])
         self.sigma = h @ self.sigma @ h.T + grad @ wheel_noise @ grad.T
         
-        self.sigma[0, 0] = max(self.sigma[0, 0], 0.005)
-        self.sigma[1, 1] = max(self.sigma[1, 1], 0.005)
-        self.sigma[2, 2] = max(self.sigma[2, 2], 0.002)
+        self.sigma[0, 0] = max(self.sigma[0, 0], 0.002)
+        self.sigma[1, 1] = max(self.sigma[1, 1], 0.002)
+        self.sigma[2, 2] = max(self.sigma[2, 2], 0.001)
 
         self.x += v * c * dt
         self.y += v * s * dt
@@ -184,8 +192,18 @@ class Localisation(Node):
 
         innovation = np.array([
             z_dist - expected_dist,
-            math.atan2(math.sin(z_bearing - expected_bearing), math.cos(z_bearing - expected_bearing)),
+            math.atan2(math.sin(z_bearing - expected_bearing),
+                    math.cos(z_bearing - expected_bearing)),
         ])
+
+        # Rechazar si la innovacion es demasiado grande (medicion espuria)
+        if abs(innovation[0]) > 0.5 or abs(innovation[1]) > 0.45:
+            self.get_logger().warn(
+                f'ArUco {marker_id} rechazado: innovacion demasiado grande '
+                f'dist={innovation[0]:+.3f} bearing={innovation[1]:+.3f}',
+                throttle_duration_sec=0.5)
+            return
+
         g = np.array([
             [-dx / expected_dist, -dy / expected_dist, 0.0],
             [dy / p, -dx / p, -1.0],
@@ -202,13 +220,13 @@ class Localisation(Node):
         self.sigma = (np.eye(3) - k @ g) @ self.sigma
         self.sigma = 0.5 * (self.sigma + self.sigma.T)
 
-        # Correccion ArUco aplicada
         self.get_logger().info(
             f'ArUco {marker_id} | dist_real={z_dist:.3f} m  dist_estimada={expected_dist:.3f} m  '
             f'error={z_dist - expected_dist:+.3f} m | '
             f'pose_est=({self.x:.3f}, {self.y:.3f}, {math.degrees(self.theta):.1f} deg) '
             f'corr=({float(delta[0]):+.3f}, {float(delta[1]):+.3f})',
             throttle_duration_sec=0.5)
+
 
     def publish_odom(self, v, w):
         now = self.get_clock().now().to_msg()

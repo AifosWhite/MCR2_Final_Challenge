@@ -20,6 +20,8 @@ fisico:
 """
 
 import math
+import signal
+import sys
 
 import numpy as np
 import rclpy
@@ -181,6 +183,8 @@ class BugController(Node):
 
         self.controller_timer = self.create_timer(
             1.0 / self.update_rate, self.controller_callback)
+
+        signal.signal(signal.SIGINT, self.shutdown_function)
 
         if self.use_waypoint_list:
             self._set_goal_from_list()
@@ -445,6 +449,12 @@ class BugController(Node):
             self.start_pose = Pose2D(x=self.robot_pose.x,
                                      y=self.robot_pose.y,
                                      theta=self.robot_pose.theta)
+
+    def shutdown_function(self, signum, frame):
+        self.get_logger().info('Shutting down. Stopping robot...')
+        self.cmd_vel_publisher.publish(Twist())
+        rclpy.shutdown()
+        sys.exit(0)
 
     def _side_center(self, direction, angle_min):
         if direction == 'left':
