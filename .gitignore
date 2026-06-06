@@ -1,15 +1,19 @@
+# ROS 2 / colcon
 build/
 install/
 log/
 
+# Python
 __pycache__/
 *.pyc
-*.pyo
 
+# VSCode database/cache
+.vscode/*.db
+.vscode/*.db-shm
+.vscode/*.db-wal
+**/.vscode/*.db
+**/.vscode/*.db-shm
+**/.vscode/*.db-wal
+
+# Opcional: caches
 .cache/
-.vscode/
-.idea/
-
-*.bag
-*.db3
-*.mcap

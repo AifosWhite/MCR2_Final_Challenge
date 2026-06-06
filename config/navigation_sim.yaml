@@ -1,0 +1,47 @@
+# Config de navegacion para SIMULACION (sin Gazebo, sin robot fisico).
+# Diferencias clave respecto a navigation_physical.yaml:
+#   - overwrite_min_max_angles: false  (LiDAR simulado ya va de -pi a pi)
+#   - lidar_yaw_offset: 0.0            (scan[0] apunta al frente del robot)
+#   - loop: true                        (ruta cerrada por los 8 marcadores)
+#   - velocidades ligeramente mas altas que en fisico
+
+bug_controller:
+  ros__parameters:
+    controller_update_rate: 25.0
+    controller_type: "BUG2"
+    overwrite_min_max_angles: false
+    lidar_yaw_offset: 0.0
+    loop: true
+
+    # Tolerancias de llegada
+    distance_tolerance: 0.12
+    angular_tolerance: 0.20
+    angular_adjustment: 0.1745
+
+    # Velocidades
+    v_max: 0.15
+    w_max: 1.5
+    p2p_v_Kp: 0.8
+    p2p_w_Kp: 1.2
+
+    # Seguimiento de pared
+    following_walls_distance: 0.25
+    front_stop_distance: 0.30
+    lookahead_distance: 0.35
+    fw_w_Kp: 1.2
+    fw_e_Kp: 8.0
+    fw_linear_speed: 0.12
+    fw_outer_corner_angular_speed: 2.0
+    fw_outer_corner_linear_speed: 0.15
+
+    # Aperturas angulares de las regiones del LiDAR (rad)
+    side_open_angle: 0.5236
+    front_open_angle: 0.4
+    target_open_angle: 0.5
+
+    bug2_line_tol: 0.15
+    max_w_accel: 4.0
+
+    # Ruta completa del laberinto: 70->701->706->75->703->702->708->705
+    waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
+    waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]
