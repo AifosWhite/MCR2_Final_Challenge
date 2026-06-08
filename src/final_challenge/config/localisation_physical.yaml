@@ -21,9 +21,9 @@ localisation:
     use_ground_truth_pose: false
     ekf_r_dist: 0.06
     ekf_r_bearing: 0.20
-    marker_ids:   [703, 705]  # solo el marcador 703, que es el del centro del laberinto
-    marker_pos_x: [1.73, 0]   # 173 cm hacia arriba desde el robot
-    marker_pos_y: [-0.41, 0]  # 41 cm de la pared izquierda
+    marker_ids:   [703]
+    marker_pos_x: [1.24]
+    marker_pos_y: [-0.31]
     #marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
     #marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
     #marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
