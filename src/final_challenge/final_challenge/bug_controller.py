@@ -109,7 +109,7 @@ class BugController(Node):
         self.closest_object_angle = 0.0
         self.lidar_min_range      = 0.15
         self.state                = self.STATE_GO_TO_GOAL
-        self.fw_direction         = 'fwcw'
+        self.fw_direction         = 'fwccw'
         self.d_gtg_at_hit         = float('inf')
         self.line_A = self.line_B = self.line_C = 0.0
 

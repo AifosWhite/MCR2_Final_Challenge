@@ -1,5 +1,4 @@
 import os
-
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -11,17 +10,9 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """
     Lanzamiento para el Puzzlebot FISICO — todo en una sola máquina.
-
-    Usar este launch cuando PC y Jetson corren en la misma máquina,
-    o para pruebas rápidas sin separar Jetson/PC.
-    Para el setup con lag de LiDAR, usar en su lugar:
+    Para el setup Jetson+PC separados usar:
       physical_jetson.launch.py  (en la Jetson)
       physical_pc.launch.py      (en la PC)
-
-    Asume que el robot físico ya publica:
-      - VelocityEncR / VelocityEncL  (encoders)
-      - scan                          (LiDAR)
-      - /video_source/raw             (cámara)
     """
     pkg         = get_package_share_directory('final_challenge')
     loc_params  = os.path.join(pkg, 'config', 'localisation_physical.yaml')
@@ -51,6 +42,21 @@ def generate_launch_description():
         name='laser_frame_alias',
         arguments=['0', '0', '0', '0', '0', '0', 'laser_frame', 'laser'],
         output='screen',
+    )
+
+    joint_state_publisher = Node(
+        package='final_challenge',
+        executable='puzzlebot_joint_state_publisher',
+        name='puzzlebot_joint_state_publisher',
+        output='screen',
+        parameters=[{
+            'right_wheel_joint': 'wheel_right_joint',
+            'left_wheel_joint':  'wheel_left_joint',
+        }],
+        remappings=[
+            ('wr', 'VelocityEncR'),
+            ('wl', 'VelocityEncL'),
+        ],
     )
 
     localisation = Node(
@@ -104,6 +110,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_rviz', default_value='true'),
         DeclareLaunchArgument('nav',      default_value='true'),
         robot_state_publisher,
+        joint_state_publisher,
         laser_frame_alias,
         localisation,
         aruco_detector,

@@ -1,5 +1,4 @@
 import os
-
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -11,10 +10,8 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """
     Lanzamiento para la JETSON — nodos que consumen /scan localmente.
-
     Correr en la Jetson para evitar lag de LiDAR por WiFi.
     En la PC correr physical_pc.launch.py (solo RViz).
-
       ros2 launch final_challenge physical_jetson.launch.py
       ros2 launch final_challenge physical_jetson.launch.py nav:=false
     """
@@ -44,6 +41,21 @@ def generate_launch_description():
         name='laser_frame_alias',
         arguments=['0', '0', '0', '0', '0', '0', 'laser_frame', 'laser'],
         output='screen',
+    )
+
+    joint_state_publisher = Node(
+        package='final_challenge',
+        executable='puzzlebot_joint_state_publisher',
+        name='puzzlebot_joint_state_publisher',
+        output='screen',
+        parameters=[{
+            'right_wheel_joint': 'wheel_right_joint',
+            'left_wheel_joint':  'wheel_left_joint',
+        }],
+        remappings=[
+            ('wr', 'VelocityEncR'),
+            ('wl', 'VelocityEncL'),
+        ],
     )
 
     localisation = Node(
@@ -78,6 +90,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('nav', default_value='true'),
         robot_state_publisher,
+        joint_state_publisher,
         laser_frame_alias,
         localisation,
         aruco_detector,

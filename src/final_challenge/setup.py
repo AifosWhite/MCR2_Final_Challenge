@@ -43,6 +43,7 @@ setup(
             'simulator = final_challenge.simulator:main',
             'sim_lidar_node = final_challenge.sim_lidar_node:main',
             'sim_aruco_node = final_challenge.sim_aruco_node:main',
+            'puzzlebot_joint_state_publisher = final_challenge.puzzlebot_joint_state_publisher:main',
             
         ],
     },
