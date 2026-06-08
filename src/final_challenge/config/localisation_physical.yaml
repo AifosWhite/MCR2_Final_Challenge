@@ -6,8 +6,8 @@
 
 localisation:
   ros__parameters:
-    x0: 0.0      # robot arranca aquí
-    y0: -0.28    # 28 cm de la pared izquierda
+    x0: 0.325     # robot arranca aquí
+    y0: -0.28   # 28 cm de la pared izquierda
     theta0: 0.0  # mirando hacia +x (hacia arriba del diagrama)
     update_rate: 50.0
     wheel_radius: 0.05
@@ -21,12 +21,9 @@ localisation:
     use_ground_truth_pose: false
     ekf_r_dist: 0.06
     ekf_r_bearing: 0.20
-    marker_ids:   [703]
-    marker_pos_x: [1.24]
-    marker_pos_y: [-0.31]
-    #marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
-    #marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
-    #marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
+    marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
+    marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
 
 # Puente ligero: lee /marker_publisher/markers (ya detectado por aruco_ros)
 # y convierte al Float32MultiArray que espera el EKF.
