@@ -11,8 +11,8 @@ bug_controller:
     waypoint_topic: "selected_waypoint"
 
     # Tolerancia de llegada al waypoint
-    distance_tolerance: 0.25
-    goal_capture_tolerance: 0.30
+    distance_tolerance: 0.16
+    goal_capture_tolerance: 0.16
 
     # Velocidades
     v_max: 0.12
@@ -24,8 +24,8 @@ bug_controller:
     following_walls_distance: 0.25
     front_stop_distance: 0.24
     lookahead_distance: 0.30
-    bug2_line_tol: 0.20
-    min_wall_follow_distance: 0.08
+    bug2_line_tol: 0.20 #podríamos subir este a 0.25
+    min_wall_follow_distance: 0.08 #bajar a 0.05
     fw_w_Kp: 1.0
     fw_e_Kp: 3.5
     fw_linear_speed: 0.12
