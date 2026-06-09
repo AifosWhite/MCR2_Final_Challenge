@@ -57,7 +57,8 @@ class BugController(Node):
         self.declare_parameter('scan_topic',                       'scan')
         self.declare_parameter('cmd_vel_topic',                    'cmd_vel')
         self.declare_parameter('waypoint_topic',                   'selected_waypoint')
-        self.declare_parameter('goal_capture_tolerance',           0.30)
+        self.declare_parameter('goal_capture_tolerance',           0.16)
+        self.declare_parameter('blocked_goal_tolerance',        0.23)
 
         gp = self.get_parameter
         self.update_rate                   = float(gp('controller_update_rate').value)
@@ -83,6 +84,7 @@ class BugController(Node):
         self.min_wall_follow_distance      = float(gp('min_wall_follow_distance').value)
         self.loop                          = bool(gp('loop').value)
         self.goal_capture_tolerance        = max(float(gp('goal_capture_tolerance').value), self.distance_tolerance)
+        self.blocked_goal_tolerance     = max(float(gp('blocked_goal_tolerance').value), self.goal_capture_tolerance)
         odom_topic    = str(gp('odom_topic').value)
         scan_topic    = str(gp('scan_topic').value)
         cmd_vel_topic = str(gp('cmd_vel_topic').value)
@@ -214,12 +216,22 @@ class BugController(Node):
             self.cmd_vel_publisher.publish(Twist())
             return
 
-        # Llegada tiene prioridad
-        if d_gtg < self.goal_capture_tolerance:
+        # Llegada tiene prioridad, pero con dos zonas:
+        # 1) goal_capture_tolerance: llegada normal, precisa.
+        # 2) blocked_goal_tolerance: solo acepta llegada más amplia si el robot
+        #    ya está cerca y el LiDAR ve pared/obstáculo enfrente. Esto evita
+        #    declarar un waypoint demasiado pronto cuando todavía puede avanzar.
+        goal_reached_precise = d_gtg < self.goal_capture_tolerance
+        goal_reached_blocked = (
+            d_gtg < self.blocked_goal_tolerance and
+            self.min_front < (self.front_stop_distance + 0.04)
+        )
+        if goal_reached_precise or goal_reached_blocked:
             self.cmd_vel_publisher.publish(Twist())
             self.goal_reached_publisher.publish(Bool(data=True))
+            reason = 'preciso' if goal_reached_precise else 'bloqueado-cerca'
             self.get_logger().info(
-                f'WP{self.current_wp_num} alcanzado. d={d_gtg:.2f}. Esperando waypoint...')
+                f'WP{self.current_wp_num} alcanzado ({reason}). d={d_gtg:.2f}. Esperando waypoint...')
             self.state = self.STATE_WAIT
             return
 
@@ -311,8 +323,18 @@ class BugController(Node):
     def _bug2_leave_condition(self, d_gtg):
         on_line  = self._distance_to_start_line() < self.bug2_line_tol
         progress = d_gtg < (self.d_gtg_at_hit - self.min_wall_follow_distance)
-        front_ok = self.min_front > self.front_stop_distance + 0.05
-        return on_line and progress and front_ok
+        front_ok = self.min_front > self.front_stop_distance + 0.02
+
+        # Bug2 estricto: m-line + progreso.
+        strict_bug2 = on_line and progress and front_ok
+
+        # Escape práctico para el robot físico:
+        # si ya hicimos progreso y el frente está libre, vuelve a go_to_goal
+        # aunque no caiga exactamente sobre la m-line. Esto evita ciclos largos
+        # de wall-following cuando la odometría/pose se mueve con ArUcos.
+        soft_escape = progress and front_ok and (self.min_side > 0.14)
+
+        return strict_bug2 or soft_escape
 
     # ── Helpers ──────────────────────────────────────────────────────────────
     def _dist_to_goal(self):
@@ -389,9 +411,9 @@ class BugController(Node):
                 time.sleep(sleep_s)
 
     def shutdown_function(self, signum=None, frame=None):
-        """SIGINT/SIGTERM handler: stop wheels first, then let main exit cleanly."""
+        """SIGINT/SIGTERM handler: stop wheels first, then exit cleanly."""
         if self._shutting_down:
-            raise KeyboardInterrupt
+            return
 
         self._shutting_down = True
         try:
@@ -399,8 +421,15 @@ class BugController(Node):
         except Exception:
             pass
 
-        self._safe_stop_robot(repeats=20, sleep_s=0.02)
-        raise KeyboardInterrupt
+        self._safe_stop_robot(repeats=12, sleep_s=0.04)
+
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
+
+        raise SystemExit(0)
 
 def main(args=None):
     rclpy.init(args=args)

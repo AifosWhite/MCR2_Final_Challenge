@@ -13,7 +13,8 @@ bug_controller:
     # Tolerancia de llegada al waypoint
     distance_tolerance: 0.16
     goal_capture_tolerance: 0.16
-
+    blocked_goal_tolerance: 0.23
+    
     # Velocidades
     v_max: 0.12
     w_max: 1.2
