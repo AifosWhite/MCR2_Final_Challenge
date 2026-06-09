@@ -1,0 +1,51 @@
+# Config de localizacion para el Puzzlebot FISICO.
+# Aplica a los nodos: localisation (EKF) y aruco_detector (puente).
+#
+# SISTEMA DE COORDENADAS: origen (0,0) = esquina inferior-izquierda del laberinto.
+# +x crece hacia arriba del mapa. y es negativo hacia la derecha.
+
+localisation:
+  ros__parameters:
+    x0: 0.325     # robot arranca aquí
+    y0: -0.28   # 28 cm de la pared izquierda
+    theta0: 0.0  # mirando hacia +x (hacia arriba del diagrama)
+    update_rate: 50.0
+    wheel_radius: 0.05
+    wheel_base: 0.19
+    world_frame: "map"
+    odom_frame: "odom"
+    base_frame: "base_footprint"
+    kr: 0.003
+    kl: 0.003
+    use_ekf: true
+    use_ground_truth_pose: false
+    ekf_r_dist: 0.10       # antes 0.06
+    ekf_r_bearing: 0.45    # antes 0.20
+    
+    # Gate robusta soft para arucos
+    aruco_soft_gate: true
+    aruco_gate_dist: 1.20
+    aruco_gate_bearing: 2.20
+    aruco_clip_dist: 0.45
+    aruco_clip_bearing: 0.70
+
+    #posiciones de los arucos en el mapa
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
+    marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
+    marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
+
+# Puente ligero: lee /marker_publisher/markers (ya detectado por aruco_ros)
+# y convierte al Float32MultiArray que espera el EKF.
+# Sin procesamiento de imagen — cero duplicidad de OpenCV.
+aruco_detector:
+  ros__parameters:
+    aruco_ros_topic: "/marker_publisher/markers"
+    marker_ids: [70, 75, 701, 702, 703, 705, 706, 708]
+
+viz_debug:
+  ros__parameters:
+    frame_id: "odom"
+    err_log_threshold: 0.15
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708]
+    marker_pos_x: [1.85,  2.75,  2.82,  0.27,  1.24,  0.89,  2.455,  1.185]
+    marker_pos_y: [-0.30, -2.40, 0.00, -1.83, -2.07, -1.20, -1.255, -1.21]
