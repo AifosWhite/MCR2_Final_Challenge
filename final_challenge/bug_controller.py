@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 import math
-import signal
-import sys
-import threading
-
 import numpy as np
 import rclpy
 import rclpy.duration
@@ -12,7 +8,7 @@ from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int32
 
 
 def norm_angle(a):
@@ -56,6 +52,8 @@ class BugController(Node):
         self.declare_parameter('odom_topic',                       'odom')
         self.declare_parameter('scan_topic',                       'scan')
         self.declare_parameter('cmd_vel_topic',                    'cmd_vel')
+        self.declare_parameter('waypoint_topic',                   'selected_waypoint')
+        self.declare_parameter('goal_capture_tolerance',           0.30)
 
         gp = self.get_parameter
         self.update_rate                   = float(gp('controller_update_rate').value)
@@ -80,9 +78,11 @@ class BugController(Node):
         self.bug2_line_tol                 = float(gp('bug2_line_tol').value)
         self.min_wall_follow_distance      = float(gp('min_wall_follow_distance').value)
         self.loop                          = bool(gp('loop').value)
+        self.goal_capture_tolerance        = max(float(gp('goal_capture_tolerance').value), self.distance_tolerance)
         odom_topic    = str(gp('odom_topic').value)
         scan_topic    = str(gp('scan_topic').value)
         cmd_vel_topic = str(gp('cmd_vel_topic').value)
+        waypoint_topic = str(gp('waypoint_topic').value)
 
         # Construir diccionario de waypoints desde yaml (índice 1..N)
         wx = list(gp('waypoints_x').value)
@@ -92,6 +92,7 @@ class BugController(Node):
         self.create_subscription(Odometry,  odom_topic,  self.odom_callback,     qos_profile_sensor_data)
         self.create_subscription(LaserScan, scan_topic,  self.lidar_callback,    10)
         self.create_subscription(Pose2D,    'setpoint',  self.setpoint_callback, qos_profile_sensor_data)
+        self.create_subscription(Int32,     waypoint_topic, self.waypoint_callback, 10)
         self.cmd_vel_publisher      = self.create_publisher(Twist, cmd_vel_topic,  10)
         self.goal_reached_publisher = self.create_publisher(Bool,  'goal_reached', qos_profile_sensor_data)
 
@@ -111,47 +112,17 @@ class BugController(Node):
         self.d_gtg_at_hit         = float('inf')
         self.line_A = self.line_B = self.line_C = 0.0
         self.current_wp_num       = 1
-        self._next_wp_num         = None
-        self._wp_lock             = threading.Lock()
 
         self.get_logger().info(
             f'{self.controller_type} | lidar_offset={self.lidar_yaw_offset:.4f} rad')
         self.get_logger().info('Waypoints cargados del yaml:')
         for k, v in self.waypoints.items():
             self.get_logger().info(f'  WP{k}: {v}')
-        self.get_logger().info('Robot en WP1. Esperando waypoint...')
+        self.get_logger().info(
+            f'Robot en WP1. Esperando comando en /{waypoint_topic} ' 
+            f'(std_msgs/msg/Int32, valores {min(self.waypoints)}-{max(self.waypoints)}).')
 
-        signal.signal(signal.SIGINT, self.shutdown_function)
         self.create_timer(1.0 / self.update_rate, self.controller_callback)
-
-        self._terminal_thread = threading.Thread(
-            target=self._terminal_loop, daemon=True)
-        self._terminal_thread.start()
-
-    # ── Terminal input ────────────────────────────────────────────────────────
-    def _terminal_loop(self):
-        import time
-        time.sleep(1.5)
-        while rclpy.ok():
-            try:
-                valid = list(self.waypoints.keys())
-                print(f'\n¿A qué waypoint quieres ir? ({valid[0]}-{valid[-1]}): ',
-                      end='', flush=True)
-                line = input().strip()
-                if not line:
-                    continue
-                num = int(line)
-                if num not in self.waypoints:
-                    print(f'Número inválido. Elige entre: {valid}')
-                    continue
-                with self._wp_lock:
-                    self._next_wp_num = num
-                gx, gy = self.waypoints[num]
-                print(f'→ Navegando a WP{num} ({gx}, {gy})')
-            except (ValueError, EOFError):
-                continue
-            except Exception:
-                break
 
     def _go_to_waypoint(self, num):
         gx, gy = self.waypoints[num]
@@ -205,20 +176,24 @@ class BugController(Node):
 
     def setpoint_callback(self, msg):
         self.goal_pose = msg
+        self.current_wp_num = 0
         self._compute_start_line()
+        self.d_gtg_at_hit = float('inf')
         self.state = self.STATE_GO_TO_GOAL
+        self.get_logger().info(f'→ Setpoint externo: ({msg.x:.3f}, {msg.y:.3f})')
+
+    def waypoint_callback(self, msg: Int32):
+        num = int(msg.data)
+        if num not in self.waypoints:
+            self.get_logger().warn(
+                f'Waypoint inválido: {num}. Elige uno de {list(self.waypoints.keys())}')
+            return
+        self._go_to_waypoint(num)
 
     # ── Máquina de estados ───────────────────────────────────────────────────
     def controller_callback(self):
         if not self.scan_ready:
             return
-
-        with self._wp_lock:
-            next_wp = self._next_wp_num
-            self._next_wp_num = None
-
-        if next_wp is not None:
-            self._go_to_waypoint(next_wp)
 
         d_gtg     = self._dist_to_goal()
         theta_gtg = self._angle_to_goal()
@@ -228,11 +203,11 @@ class BugController(Node):
             return
 
         # Llegada tiene prioridad
-        if d_gtg < self.distance_tolerance:
+        if d_gtg < self.goal_capture_tolerance:
             self.cmd_vel_publisher.publish(Twist())
             self.goal_reached_publisher.publish(Bool(data=True))
             self.get_logger().info(
-                f'WP{self.current_wp_num} alcanzado. Esperando waypoint...')
+                f'WP{self.current_wp_num} alcanzado. d={d_gtg:.2f}. Esperando waypoint...')
             self.state = self.STATE_WAIT
             return
 
@@ -389,13 +364,6 @@ class BugController(Node):
     def _min_idx_outside(r, i0, i1, rmin):
         vals = r[i1:i0] if i0 > i1 else np.concatenate((r[i1:], r[:i0]))
         return float('inf') if vals.size == 0 else max(float(np.min(vals)), rmin)
-
-    def shutdown_function(self, signum, frame):
-        self.get_logger().info('Shutting down. Stopping robot...')
-        self.cmd_vel_publisher.publish(Twist())
-        rclpy.shutdown()
-        sys.exit(0)
-
 
 def main(args=None):
     rclpy.init(args=args)
