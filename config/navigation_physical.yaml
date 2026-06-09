@@ -43,6 +43,11 @@ bug_controller:
     # Lazo completo: 70->701->706->75->703->702->708->705
     # waypoints_x: [1.55, 2.82, 2.16, 2.75, 1.54, 0.27, 1.19, 0.89]
     # waypoints_y: [-0.30, -0.30, -1.25, -2.10, -2.07, -2.13, -1.51, -0.90]
-    waypoints_x: [2.18] # solo el waypoint del centro del laberinto (marcador 703)
-    waypoints_y: [-0.30]
+    
+    # Waypoints — ya no se usan para navegación interactiva.
+    # El bug_controller ahora espera input de terminal (WP1..WP6).
+    # WP1: (0.36, -0.275)  WP2: (0.36, -0.94)   WP3: (0.36, -2.72)
+    # WP4: (2.18, -0.30)   WP5: (2.72, -2.72)    WP6: (1.70, -2.04)
+    waypoints_x: [0.36]
+    waypoints_y: [-0.275]
     loop: false
