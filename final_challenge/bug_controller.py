@@ -2,23 +2,21 @@
 import math
 import signal
 import sys
+import time
 
 import numpy as np
 import rclpy
+import rclpy.duration
 from geometry_msgs.msg import Pose2D, Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int32
 
 
 def norm_angle(a):
     return math.atan2(math.sin(a), math.cos(a))
-
-
-DEFAULT_WAYPOINTS_X = [1.30, 2.82]
-DEFAULT_WAYPOINTS_Y = [-0.30, -0.30]
 
 
 class BugController(Node):
@@ -26,14 +24,15 @@ class BugController(Node):
     STATE_GO_TO_GOAL  = "go_to_goal"
     STATE_FOLLOW_WALL = "follow_wall"
     STATE_STOP        = "stop"
+    STATE_WAIT        = "wait"
 
     def __init__(self):
         super().__init__('bug_controller')
 
         self.declare_parameter('controller_update_rate',          25.0)
-        self.declare_parameter('distance_tolerance',               0.12)
+        self.declare_parameter('distance_tolerance',               0.25)
         self.declare_parameter('following_walls_distance',         0.25)
-        self.declare_parameter('front_stop_distance',              0.30)
+        self.declare_parameter('front_stop_distance',              0.24)
         self.declare_parameter('lookahead_distance',               0.30)
         self.declare_parameter('p2p_v_Kp',                        0.8)
         self.declare_parameter('p2p_w_Kp',                        1.2)
@@ -47,17 +46,18 @@ class BugController(Node):
         self.declare_parameter('side_open_angle',                  0.5236)
         self.declare_parameter('front_open_angle',                 0.4)
         self.declare_parameter('controller_type',                  'BUG2')
-
         self.declare_parameter('lidar_yaw_offset',                 3.14159)
         self.declare_parameter('max_w_accel',                      4.0)
         self.declare_parameter('bug2_line_tol',                    0.15)
         self.declare_parameter('min_wall_follow_distance',         0.40)
-        self.declare_parameter('waypoints_x',                      DEFAULT_WAYPOINTS_X)
-        self.declare_parameter('waypoints_y',                      DEFAULT_WAYPOINTS_Y)
-        self.declare_parameter('loop',                             True)
+        self.declare_parameter('waypoints_x',                      [0.36])
+        self.declare_parameter('waypoints_y',                      [-0.275])
+        self.declare_parameter('loop',                             False)
         self.declare_parameter('odom_topic',                       'odom')
         self.declare_parameter('scan_topic',                       'scan')
         self.declare_parameter('cmd_vel_topic',                    'cmd_vel')
+        self.declare_parameter('waypoint_topic',                   'selected_waypoint')
+        self.declare_parameter('goal_capture_tolerance',           0.30)
 
         gp = self.get_parameter
         self.update_rate                   = float(gp('controller_update_rate').value)
@@ -82,23 +82,26 @@ class BugController(Node):
         self.bug2_line_tol                 = float(gp('bug2_line_tol').value)
         self.min_wall_follow_distance      = float(gp('min_wall_follow_distance').value)
         self.loop                          = bool(gp('loop').value)
+        self.goal_capture_tolerance        = max(float(gp('goal_capture_tolerance').value), self.distance_tolerance)
         odom_topic    = str(gp('odom_topic').value)
         scan_topic    = str(gp('scan_topic').value)
         cmd_vel_topic = str(gp('cmd_vel_topic').value)
+        waypoint_topic = str(gp('waypoint_topic').value)
 
+        # Construir diccionario de waypoints desde yaml (índice 1..N)
         wx = list(gp('waypoints_x').value)
         wy = list(gp('waypoints_y').value)
-        self.waypoints  = [(float(x), float(y)) for x, y in zip(wx, wy)]
-        self.goal_index = 0
+        self.waypoints = {i + 1: (float(wx[i]), float(wy[i])) for i in range(len(wx))}
 
-        self.create_subscription(Odometry,  odom_topic,  self.odom_callback,       qos_profile_sensor_data)
-        self.create_subscription(LaserScan, scan_topic,  self.lidar_callback,      10)
-        self.create_subscription(Pose2D,    'setpoint',  self.setpoint_callback,   qos_profile_sensor_data)
+        self.create_subscription(Odometry,  odom_topic,  self.odom_callback,     qos_profile_sensor_data)
+        self.create_subscription(LaserScan, scan_topic,  self.lidar_callback,    10)
+        self.create_subscription(Pose2D,    'setpoint',  self.setpoint_callback, qos_profile_sensor_data)
+        self.create_subscription(Int32,     waypoint_topic, self.waypoint_callback, 10)
         self.cmd_vel_publisher      = self.create_publisher(Twist, cmd_vel_topic,  10)
         self.goal_reached_publisher = self.create_publisher(Bool,  'goal_reached', qos_profile_sensor_data)
 
         self.robot_pose           = Pose2D()
-        self.goal_pose            = Pose2D()
+        self.goal_pose            = Pose2D(x=self.waypoints[1][0], y=self.waypoints[1][1])
         self.scan_ready           = False
         self.prev_w               = 0.0
         self.collision_time       = self.get_clock().now()
@@ -108,43 +111,35 @@ class BugController(Node):
         self.min_back_side_out    = float('inf')
         self.closest_object_angle = 0.0
         self.lidar_min_range      = 0.15
-        self.state                = self.STATE_GO_TO_GOAL
+        self.state                = self.STATE_WAIT
         self.fw_direction         = 'fwccw'
         self.d_gtg_at_hit         = float('inf')
         self.line_A = self.line_B = self.line_C = 0.0
+        self.current_wp_num       = 1
 
-        self._set_goal_from_list()
         self.get_logger().info(
-            f'{self.controller_type} | {len(self.waypoints)} WPs | '
-            f'loop={self.loop} | lidar_offset={self.lidar_yaw_offset:.4f} rad')
+            f'{self.controller_type} | lidar_offset={self.lidar_yaw_offset:.4f} rad')
+        self.get_logger().info('Waypoints cargados del yaml:')
+        for k, v in self.waypoints.items():
+            self.get_logger().info(f'  WP{k}: {v}')
+        self.get_logger().info(
+            f'Robot en WP1. Esperando comando en /{waypoint_topic} ' 
+            f'(std_msgs/msg/Int32, valores {min(self.waypoints)}-{max(self.waypoints)}).')
 
+        self._shutting_down = False
         signal.signal(signal.SIGINT, self.shutdown_function)
+        signal.signal(signal.SIGTERM, self.shutdown_function)
+
         self.create_timer(1.0 / self.update_rate, self.controller_callback)
 
-    # ── Waypoints ────────────────────────────────────────────────────────────
-    def _set_goal_from_list(self):
-        gx, gy = self.waypoints[self.goal_index]
+    def _go_to_waypoint(self, num):
+        gx, gy = self.waypoints[num]
+        self.current_wp_num = num
         self.goal_pose = Pose2D(x=gx, y=gy, theta=0.0)
         self.state = self.STATE_GO_TO_GOAL
         self._compute_start_line()
-        self.get_logger().info(f'→ WP{self.goal_index}: ({gx:.2f}, {gy:.2f})')
-
-    def _advance_waypoint(self):
-        if self.goal_index + 1 >= len(self.waypoints):
-            if self.loop:
-                self.goal_index = 0
-            else:
-                self.get_logger().info('Ruta completa.')
-                self.state = self.STATE_STOP
-                return
-        else:
-            self.goal_index += 1
-        self._set_goal_from_list()
-
-    def setpoint_callback(self, msg):
-        self.goal_pose = msg
-        self._compute_start_line()
-        self.state = self.STATE_GO_TO_GOAL
+        self.d_gtg_at_hit = float('inf')
+        self.get_logger().info(f'→ WP{num}: ({gx:.3f}, {gy:.3f})')
 
     # ── Callbacks ────────────────────────────────────────────────────────────
     def odom_callback(self, msg: Odometry):
@@ -187,35 +182,52 @@ class BugController(Node):
             ranges, side_c, eff_offset,
             self.side_open_angle * 0.5, self.side_open_angle, inc, rmin)
 
+    def setpoint_callback(self, msg):
+        self.goal_pose = msg
+        self.current_wp_num = 0
+        self._compute_start_line()
+        self.d_gtg_at_hit = float('inf')
+        self.state = self.STATE_GO_TO_GOAL
+        self.get_logger().info(f'→ Setpoint externo: ({msg.x:.3f}, {msg.y:.3f})')
+
+    def waypoint_callback(self, msg: Int32):
+        num = int(msg.data)
+        if num not in self.waypoints:
+            self.get_logger().warn(
+                f'Waypoint inválido: {num}. Elige uno de {list(self.waypoints.keys())}')
+            return
+        self._go_to_waypoint(num)
+
     # ── Máquina de estados ───────────────────────────────────────────────────
     def controller_callback(self):
+        if self._shutting_down:
+            self._safe_stop_robot(repeats=1, sleep_s=0.0)
+            return
+
         if not self.scan_ready:
             return
 
         d_gtg     = self._dist_to_goal()
         theta_gtg = self._angle_to_goal()
-        twist     = Twist()
 
-        if self.state == self.STATE_STOP:
+        if self.state in (self.STATE_STOP, self.STATE_WAIT):
             self.cmd_vel_publisher.publish(Twist())
             return
 
-        # IMPORTANT: goal arrival has priority over obstacle handling.
-        # This prevents the robot from entering wall-following when it is
-        # already close enough to the waypoint but the LiDAR sees the wall/marker
-        # in front of it.
-        if d_gtg < self.distance_tolerance:
+        # Llegada tiene prioridad
+        if d_gtg < self.goal_capture_tolerance:
             self.cmd_vel_publisher.publish(Twist())
             self.goal_reached_publisher.publish(Bool(data=True))
-            self.get_logger().info(f'WP{self.goal_index} alcanzado.')
-            self._advance_waypoint()
+            self.get_logger().info(
+                f'WP{self.current_wp_num} alcanzado. d={d_gtg:.2f}. Esperando waypoint...')
+            self.state = self.STATE_WAIT
             return
+
+        twist = Twist()
 
         if self.state == self.STATE_GO_TO_GOAL:
             v, w = self._go_to_goal_control(d_gtg, theta_gtg)
 
-            # Only enter Bug wall-following if we are NOT already at the goal.
-            # The arrival check above must always happen first.
             if self.min_front < self.front_stop_distance:
                 self.get_logger().info(f'Hit point → {self.controller_type}')
                 self.d_gtg_at_hit = d_gtg
@@ -235,8 +247,6 @@ class BugController(Node):
                 if self.min_front < self.lidar_min_range + 0.01:
                     self.collision_time = self.get_clock().now()
 
-            # Goal arrival is still checked first above. Here we only decide
-            # whether Bug0/Bug2 can leave the wall and return to go-to-goal.
             if self.controller_type == 'BUG0':
                 if self._bug0_leave_condition(d_gtg, theta_gtg):
                     self.get_logger().info('Bug0: clear shot → go_to_goal')
@@ -258,7 +268,7 @@ class BugController(Node):
         self.cmd_vel_publisher.publish(twist)
 
         self.get_logger().info(
-            f'[{self.state}] WP{self.goal_index} d={d_gtg:.2f} '
+            f'[{self.state}] WP{self.current_wp_num} d={d_gtg:.2f} '
             f'front={self.min_front:.2f} side={self.min_side:.2f} '
             f'v={v:+.2f} w={w:+.2f}',
             throttle_duration_sec=1.0)
@@ -266,8 +276,7 @@ class BugController(Node):
     # ── Controladores ────────────────────────────────────────────────────────
     def _go_to_goal_control(self, d_gtg, theta_gtg):
         e_theta = norm_angle(theta_gtg - self.robot_pose.theta)
-        e_d     = d_gtg
-        v = min(self.p2p_v_Kp * e_d, self.v_max)
+        v = min(self.p2p_v_Kp * d_gtg, self.v_max)
         w = self.p2p_w_Kp * e_theta
         return v, w
 
@@ -368,26 +377,53 @@ class BugController(Node):
         vals = r[i1:i0] if i0 > i1 else np.concatenate((r[i1:], r[:i0]))
         return float('inf') if vals.size == 0 else max(float(np.min(vals)), rmin)
 
-    def shutdown_function(self, signum, frame):
-        self.get_logger().info('Shutting down. Stopping robot...')
-        self.cmd_vel_publisher.publish(Twist())
-        rclpy.shutdown()
-        sys.exit(0)
+    def _safe_stop_robot(self, repeats=10, sleep_s=0.03):
+        """Publish zero velocity several times, but never crash during shutdown."""
+        stop_msg = Twist()
+        for _ in range(repeats):
+            try:
+                self.cmd_vel_publisher.publish(stop_msg)
+            except Exception:
+                break
+            if sleep_s > 0.0:
+                time.sleep(sleep_s)
 
+    def shutdown_function(self, signum=None, frame=None):
+        """SIGINT/SIGTERM handler: stop wheels first, then let main exit cleanly."""
+        if self._shutting_down:
+            raise KeyboardInterrupt
+
+        self._shutting_down = True
+        try:
+            self.get_logger().info('Shutting down. Stopping robot...')
+        except Exception:
+            pass
+
+        self._safe_stop_robot(repeats=20, sleep_s=0.02)
+        raise KeyboardInterrupt
 
 def main(args=None):
     rclpy.init(args=args)
     node = BugController()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         pass
     finally:
-        if rclpy.ok():
-            node.cmd_vel_publisher.publish(Twist())
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+        if node is not None:
+            try:
+                node._safe_stop_robot(repeats=8, sleep_s=0.03)
+            except Exception:
+                pass
+            try:
+                node.destroy_node()
+            except Exception:
+                pass
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':
