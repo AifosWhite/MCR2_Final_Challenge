@@ -6,17 +6,17 @@
 
 localisation:
   ros__parameters:
-    x0: 0.325     # robot arranca aquí
-    y0: -0.28   # 28 cm de la pared izquierda
+    x0: 0.36     # robot arranca aquí
+    y0: -0.275   # 28 cm de la pared izquierda
     theta0: 0.0  # mirando hacia +x (hacia arriba del diagrama)
     update_rate: 50.0
     wheel_radius: 0.05
-    wheel_base: 0.19
+    wheel_base: 0.214 #antes 0.19 pero 0.19 * (405/360)) = 0.2138 = 21.38 cm entre ruedas
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
-    kr: 0.003
-    kl: 0.003
+    kr: 0.00285 # calibrado con datos reales, antes 0.003
+    kl: 0.00295 # calibrado con datos reales, antes 0.003
     use_ekf: true
     use_ground_truth_pose: false
     ekf_r_dist: 0.10       # antes 0.06
