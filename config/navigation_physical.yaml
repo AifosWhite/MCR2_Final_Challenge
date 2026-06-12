@@ -1,21 +1,19 @@
-# Config de navegacion (Bug0 + wall-following) para FISICO.
-# BUG0: sale de wall-following en cuanto tiene linea libre al goal.
-# Ideal para navegacion aleatoria entre waypoints no consecutivos.
+# Config de navegacion (Bug2 + wall-following) para FISICO.
 # Aplica al nodo: bug_controller
 
 bug_controller:
   ros__parameters:
     controller_update_rate: 25.0
-    controller_type: "BUG0"   # cambiado de BUG2 a BUG0 para navegacion aleatoria
+    controller_type: "BUG2"
 
     # Seleccion de waypoint por topico:
-    # ros2 topic pub --once /selected_waypoint std_msgs/msg/Int32 "{data: 2}"
+    # ros2 topic pub --once /selected_waypoint std_msgs/msg/Int32 "{data: 4}"
     waypoint_topic: "selected_waypoint"
 
     # Tolerancia de llegada al waypoint
-    distance_tolerance: 0.16
-    goal_capture_tolerance: 0.16
-    blocked_goal_tolerance: 0.23
+    distance_tolerance: 0.15
+    goal_capture_tolerance: 0.25
+    blocked_goal_tolerance: 0.15
 
     # Velocidades
     v_max: 0.12
@@ -39,15 +37,15 @@ bug_controller:
     side_open_angle: 0.5236
     front_open_angle: 0.4
 
-    # Offset LiDAR
+    # Offset LiDAR (LiDAR montado al revés)
     lidar_yaw_offset: 3.14159
 
-    # Suavizado angular
+    # Suavizado angular (rad/s^2). 0 = sin limite.
     max_w_accel: 4.0
 
     # Waypoints del laberinto (indice 1..6)
-    # WP1: inicio      WP2: pasillo izq   WP3: esquina inf-izq
-    # WP4: centro-der  WP5: esquina inf-der  WP6: centro
+    # WP1: inicio        WP2: pasillo izq    WP3: esquina inf-izq
+    # WP4: centro-der    WP5: esquina inf-der WP6: centro
     waypoints_x: [0.36,   0.36,  0.36,  2.18,  2.72,  1.70]
     waypoints_y: [-0.275, -0.94, -2.72, -0.30, -2.72, -2.04]
     loop: false

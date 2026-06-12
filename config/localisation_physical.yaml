@@ -6,21 +6,21 @@
 
 localisation:
   ros__parameters:
-    x0: 0.36     # robot arranca aquí
-    y0: -0.275   # 28 cm de la pared izquierda
-    theta0: 0.0  # mirando hacia +x (hacia arriba del diagrama)
+    x0: 0.36
+    y0: -0.275
+    theta0: 0.0
     update_rate: 50.0
     wheel_radius: 0.05
-    wheel_base: 0.214 #antes 0.19 pero 0.19 * (405/360)) = 0.2138 = 21.38 cm entre ruedas
+    wheel_base: 0.214     # calibrado: 0.19 * (405/360) = 0.214
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
-    kr: 0.00285 # calibrado con datos reales, antes 0.003
-    kl: 0.00295 # calibrado con datos reales, antes 0.003
+    kr: 0.00285           # calibrado con pruebas lineales
+    kl: 0.00295           # calibrado con pruebas lineales
     use_ekf: true
     use_ground_truth_pose: false
-    ekf_r_dist: 0.10
-    ekf_r_bearing: 0.45
+    ekf_r_dist: 0.06
+    ekf_r_bearing: 0.20
 
     # Gate robusta soft para arucos
     aruco_soft_gate: true
@@ -30,13 +30,12 @@ localisation:
     aruco_clip_bearing: 0.70
 
     # Posiciones de los arucos en el mapa (coordenadas medidas en pista)
-    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708,   710,   711,   712,   713,   714]
-    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,   1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
-    marker_pos_y: [-0.295, -2.40, 0.00, -1.82, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708,   710,   711,   712,   713,   714]
+    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
+    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
 
 # Puente ligero: lee /marker_publisher/markers (ya detectado por aruco_ros)
 # y convierte al Float32MultiArray que espera el EKF.
-# Sin procesamiento de imagen — cero duplicidad de OpenCV.
 aruco_detector:
   ros__parameters:
     aruco_ros_topic: "/marker_publisher/markers"
@@ -46,6 +45,6 @@ viz_debug:
   ros__parameters:
     frame_id: "odom"
     err_log_threshold: 0.15
-    marker_ids:   [70,    75,    701,   702,   703,   705,   706,    708,   710,   711,   712,   713,   714]
-    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,   1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
-    marker_pos_y: [-0.295, -2.40, 0.00, -1.82, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
+    marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708,   710,   711,   712,   713,   714]
+    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
+    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
