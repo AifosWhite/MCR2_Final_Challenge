@@ -11,9 +11,9 @@ bug_controller:
     waypoint_topic: "selected_waypoint"
 
     # Tolerancia de llegada al waypoint
-    distance_tolerance: 0.15
+    distance_tolerance: 0.12
     goal_capture_tolerance: 0.25
-    blocked_goal_tolerance: 0.15
+    blocked_goal_tolerance: 0.12
 
     # Velocidades
     v_max: 0.12
@@ -22,16 +22,16 @@ bug_controller:
     p2p_w_Kp: 0.9
 
     # Seguimiento de pared
-    following_walls_distance: 0.25
+    following_walls_distance: 0.22
     front_stop_distance: 0.24
     lookahead_distance: 0.30
-    bug2_line_tol: 0.20
+    bug2_line_tol: 0.17   # antes 0.20
     min_wall_follow_distance: 0.08
     fw_w_Kp: 1.0
     fw_e_Kp: 3.5
     fw_linear_speed: 0.12
-    fw_outer_corner_angular_speed: 1.2
-    fw_outer_corner_linear_speed: 0.16
+    fw_outer_corner_angular_speed: 1.0 # antes 1.2
+    fw_outer_corner_linear_speed: 0.18 # antes 0.16
 
     # Aperturas angulares LiDAR (rad)
     side_open_angle: 0.5236

@@ -11,12 +11,12 @@ localisation:
     theta0: 0.0
     update_rate: 50.0
     wheel_radius: 0.05
-    wheel_base: 0.214     # calibrado: 0.19 * (405/360) = 0.214
+    wheel_base: 0.235     # calibrado: 0.19 * (405/360) = 0.214
     world_frame: "map"
     odom_frame: "odom"
     base_frame: "base_footprint"
-    kr: 0.00285           # calibrado con pruebas lineales
-    kl: 0.00295           # calibrado con pruebas lineales
+    kr: 0.0029           # calibrado con pruebas lineales
+    kl: 0.0029           # calibrado con pruebas lineales
     use_ekf: true
     use_ground_truth_pose: false
     ekf_r_dist: 0.06
@@ -31,8 +31,8 @@ localisation:
 
     # Posiciones de los arucos en el mapa (coordenadas medidas en pista)
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708,   710,   711,   712,   713,   714]
-    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
-    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
+    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.39,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
+    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.26, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
 
 # Puente ligero: lee /marker_publisher/markers (ya detectado por aruco_ros)
 # y convierte al Float32MultiArray que espera el EKF.
@@ -46,5 +46,5 @@ viz_debug:
     frame_id: "odom"
     err_log_threshold: 0.15
     marker_ids:   [70,    75,    701,   702,   703,   705,   706,   708,   710,   711,   712,   713,   714]
-    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.42,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
-    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.27, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
+    marker_pos_x: [1.84,  2.72,  2.77,  0.00,  1.21,  0.93,  2.39,  1.19,  1.86,  3.02,  0.00,  0.37,  0.00]
+    marker_pos_y: [-0.295, -2.40, 0.00, -2.46, -2.09, -1.23, -1.26, -1.25, -0.28, -2.70, -0.92, -3.25, -0.26]
