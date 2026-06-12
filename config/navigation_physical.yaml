@@ -1,10 +1,12 @@
-# Config de navegacion (Bug2 + wall-following) para FISICO.
+# Config de navegacion (Bug0 + wall-following) para FISICO.
+# BUG0: sale de wall-following en cuanto tiene linea libre al goal.
+# Ideal para navegacion aleatoria entre waypoints no consecutivos.
 # Aplica al nodo: bug_controller
 
 bug_controller:
   ros__parameters:
     controller_update_rate: 25.0
-    controller_type: "BUG2"
+    controller_type: "BUG0"   # cambiado de BUG2 a BUG0 para navegacion aleatoria
 
     # Seleccion de waypoint por topico:
     # ros2 topic pub --once /selected_waypoint std_msgs/msg/Int32 "{data: 2}"
@@ -14,7 +16,7 @@ bug_controller:
     distance_tolerance: 0.16
     goal_capture_tolerance: 0.16
     blocked_goal_tolerance: 0.23
-    
+
     # Velocidades
     v_max: 0.12
     w_max: 1.2
@@ -25,8 +27,8 @@ bug_controller:
     following_walls_distance: 0.25
     front_stop_distance: 0.24
     lookahead_distance: 0.30
-    bug2_line_tol: 0.20 #podríamos subir este a 0.25
-    min_wall_follow_distance: 0.08 #bajar a 0.05
+    bug2_line_tol: 0.20
+    min_wall_follow_distance: 0.08
     fw_w_Kp: 1.0
     fw_e_Kp: 3.5
     fw_linear_speed: 0.12
@@ -43,7 +45,7 @@ bug_controller:
     # Suavizado angular
     max_w_accel: 4.0
 
-    # Waypoints del laberinto (índice 1..6)
+    # Waypoints del laberinto (indice 1..6)
     # WP1: inicio      WP2: pasillo izq   WP3: esquina inf-izq
     # WP4: centro-der  WP5: esquina inf-der  WP6: centro
     waypoints_x: [0.36,   0.36,  0.36,  2.18,  2.72,  1.70]
